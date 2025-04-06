@@ -1,5 +1,8 @@
+#pragma once
+
 #include <stdint.h>
 #include <stdlib.h>
+#include "helper.h"
 
 typedef enum expr_type {Lit, Add, Sub} e_type;
 
@@ -11,11 +14,12 @@ typedef struct expression_t{
 } expr;
 
 typedef struct parse_result_t{
-    int valid;
-    expr expression;
+    BOOL valid;
+    expr* expression;
     char* remaining;
 } parse_result;
 
-#define INVALID_PARSE_RESULT {0, {Lit, 0, NULL, NULL}, NULL}
+#define INVALID_PARSE_RESULT (parse_result){FALSE, NULL, NULL}
+#define PARSE_RESULT(e, r) (parse_result){TRUE, e, r}
 
-parse_result* parse_expr(char* str);
+parse_result parse_expr(char* str);

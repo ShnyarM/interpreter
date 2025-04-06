@@ -1,6 +1,8 @@
-int is_digit(char c){
-    if(c >= '0' && c <= '9') return 1;
-    return 0;
+#include "helper.h"
+
+BOOL is_digit(char c){
+    if(c >= '0' && c <= '9') return TRUE;
+    return FALSE;
 }
 
 int char_to_digit(char c){

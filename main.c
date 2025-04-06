@@ -9,9 +9,9 @@
 // Expr := Atom (('+' | '-') Atom)*
 // Atom := Int | '(' Expr ')'
 
-int is_operator(char c){
-    if(c == '+' || c == '-') return 1;
-    return 0;
+BOOL is_operator(char c){
+    if(c == '+' || c == '-') return TRUE;
+    return FALSE;
 }
 
 e_type char_to_operator(char c){
@@ -27,37 +27,13 @@ void free_expr(expr* e){
     free(e);
 }
 
-void free_parse_result(parse_result* r){
-    if(r == NULL) return;
-    free_expr(r->expression.expr_1);
-    free_expr(r->expression.expr_2);
-    free(r);
-}
-
-expr* get_expr_ptr(e_type type, int val, expr* ex_1, expr* ex_2){
+expr* get_expr(e_type type, int val, expr* ex_1, expr* ex_2){
     expr* expression = (expr*)malloc(EXPR_SIZE);
     expression->type = type;
     expression->val = val;
     expression->expr_1 = ex_1;
     expression->expr_2 = ex_2;
     return expression;
-}
-
-expr get_expr(e_type type, int val, expr* ex_1, expr* ex_2){
-    expr expression;
-    expression.type = type;
-    expression.val = val;
-    expression.expr_1 = ex_1;
-    expression.expr_2 = ex_2;
-    return expression;
-}
-
-parse_result* get_parse_results(expr expression, char* remaining){
-    parse_result* p = (parse_result*)malloc(PARSE_RESULT_SIZE);
-    p->expression = expression;
-    p->remaining = remaining;
-    p->valid = 1;
-    return p;
 }
 
 int eval_expr(expr* expression){
@@ -82,15 +58,15 @@ int eval_expr(expr* expression){
     return -1;
 }
 
-parse_result* parse_integer(char* str){
-    if(!is_digit(*str) && *str != '-') return NULL;
+parse_result parse_integer(char* str){
+    if(!is_digit(*str) && *str != '-') return INVALID_PARSE_RESULT;
 
     int negative_mult = 1;
     if(*str == '-'){
         negative_mult = -1;
         str++;
     }
-    if(!is_digit(*str)) return NULL;
+    if(!is_digit(*str)) return INVALID_PARSE_RESULT;
 
     char* str_start = str;
 
@@ -106,93 +82,94 @@ parse_result* parse_integer(char* str){
         str--;
     }
 
-    expr literal = get_expr(Lit, value*negative_mult, NULL, NULL);
-    return get_parse_results(literal, str_end);
+    expr* literal = get_expr(Lit, value*negative_mult, NULL, NULL);
+    return PARSE_RESULT(literal, str_end);
 }
 
-parse_result* parse_atom(char* str){
+parse_result parse_atom(char* str){
     // Try if its a integer
-    parse_result* integer = parse_integer(str);
+    parse_result integer = parse_integer(str);
 
-    if(integer != NULL){
+    if(integer.valid){
         return integer;
     }
 
     // Try if its an expression surrounded by brackets
     if(*str == '('){
-        parse_result* expression = parse_expr(str+1);
-        if(expression == NULL){
-            return NULL;
+        parse_result expression = parse_expr(str+1);
+        if(!expression.valid){
+            return INVALID_PARSE_RESULT;
         }
 
-        if(*(expression->remaining) != ')'){
-            free(expression);
-            return NULL;
+        if(*(expression.remaining) != ')'){
+            free(expression.expression);
+            return INVALID_PARSE_RESULT;
         }
 
-        expression->remaining++;
+        expression.remaining++;
         return expression;
     }
 
-    return NULL;
+    return INVALID_PARSE_RESULT;
 }
 
 
-parse_result* parse_oatom(char* str){
+parse_result parse_oatom(char* str){
     if(is_operator(*str)){
-        parse_result* atom = parse_atom(str+1);
+        parse_result atom = parse_atom(str+1);
 
-        if(atom == NULL){
-            return NULL;
+        if(!atom.valid){
+            return INVALID_PARSE_RESULT;
         }
 
-        expr* expr_ptr = get_expr_ptr(atom->expression.type, atom->expression.val, atom->expression.expr_1, atom->expression.expr_2);
-        expr new_expression = get_expr(char_to_operator(*str), 0, NULL, expr_ptr);
-        atom->expression = new_expression;
+        expr* new_expression = get_expr(char_to_operator(*str), 0, NULL, atom.expression);
+        atom.expression = new_expression;
         return atom;
     }
-    return NULL;
+    return INVALID_PARSE_RESULT;
 }
 
-parse_result* parse_expr(char* str){
-    parse_result* atom = parse_atom(str);
+parse_result parse_expr(char* str){
+    parse_result atom = parse_atom(str);
 
-    if(atom == NULL) return NULL;
+    if(!atom.valid) return INVALID_PARSE_RESULT;
 
-    char* remaining = atom->remaining;
+    char* remaining = atom.remaining;
     
-    while(1){
-        parse_result* new_atom = parse_oatom(remaining);
+    while(TRUE){
+        parse_result new_atom = parse_oatom(remaining);
 
-        if(new_atom == NULL) break;
+        if(!new_atom.valid) break;
 
-        new_atom->expression.expr_1 = get_expr_ptr(atom->expression.type, atom->expression.val, atom->expression.expr_1, atom->expression.expr_2);
-        parse_result* temp = atom;
+        new_atom.expression->expr_1 = atom.expression;
         atom = new_atom;
-        remaining = atom->remaining;
-        
-        free(temp);
+        remaining = atom.remaining;
     }
 
     return atom;
 }
 
+// Top level function to start parsing process
 expr* str_to_expression(char* str){
-    parse_result* result = parse_expr(str);
-    if(result == NULL) return NULL;
+    parse_result result = parse_expr(str);
+    if(!result.valid) return NULL;
 
-    expr* expression = get_expr_ptr(result->expression.type, result->expression.val, result->expression.expr_1, result->expression.expr_2);
-    free(result);
-    return expression;
+    //check if there is not additional stuff at end of string
+    if(result.remaining[0] != 0){
+        free_expr(result.expression);
+        return NULL;
+    }
+
+    return result.expression;
 }
 
-int is_valid_expression(char* str){
+BOOL is_valid_expression(char* str){
     expr* expression = str_to_expression(str);
 
-    if(expression == NULL) return 0;
+    if(expression == NULL) return FALSE;
     
     free(expression);
-    return 1;
+    return TRUE;
 }
 
 int calculate(char* str){
@@ -228,4 +205,4 @@ int main(int argc, char** argv){
     return 0;
 }
 
-//TODO: fix brackets, allow spaces, double negation, multiplication
+//TODO: create MAKE file, allow spaces, double negation, multiplication
