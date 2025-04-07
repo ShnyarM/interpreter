@@ -6,8 +6,11 @@
 #define EXPR_SIZE sizeof(expr)
 #define PARSE_RESULT_SIZE sizeof(parse_result)
 
-// Expr := Atom (('+' | '-') Atom)*
-// Atom := Int | '(' Expr ')'
+// <expression> ::= <add-expr>
+// <add-expr> ::= <mul-expr> (['+' | '-'] <mul-expr>)*
+// <mul-expr> ::= <atomic> (['*' | '/'] <atomic>)*
+// <atomic> ::= '-'<atomic> | (<literal> | <variable> | <parens>)
+// <parens> ::= '(' <expression> ')'
 
 BOOL is_operator(char c){
     if(c == '+' || c == '-') return TRUE;
@@ -17,11 +20,21 @@ BOOL is_operator(char c){
 e_type char_to_operator(char c){
     if(c == '+') return Add;
     if(c == '-') return Sub;
+    if(c == '*') return Mul;
+    if(c == '/') return Div;
     return Add;
+}
+
+token_result get_next_char(char* str){
+    str = remove_spaces(str);
+    return (token_result){*str, str+1};
 }
 
 void free_expr(expr* e){
     if(e == NULL) return;
+
+    if(e->name != NULL) free(e->name);
+
     free_expr(e->expr_1);
     free_expr(e->expr_2);
     free(e);
@@ -31,8 +44,20 @@ expr* get_expr(e_type type, int val, expr* ex_1, expr* ex_2){
     expr* expression = (expr*)malloc(EXPR_SIZE);
     expression->type = type;
     expression->val = val;
+    expression->name = NULL;
     expression->expr_1 = ex_1;
     expression->expr_2 = ex_2;
+    return expression;
+}
+
+// name needs to be dynamically allocated name
+expr* get_var_expr(char* name){
+    expr* expression = (expr*)malloc(EXPR_SIZE);
+    expression->type = Var;
+    expression->val = 0;
+    expression->name = name;
+    expression->expr_1 = NULL;
+    expression->expr_2 = NULL;
     return expression;
 }
 
@@ -55,17 +80,115 @@ int eval_expr(expr* expression){
         return value_1 - value_2;
     }
 
+    if(expression->type == Mul){
+        int value_1 = eval_expr(expression->expr_1);
+        int value_2 = eval_expr(expression->expr_2);
+
+        return value_1 * value_2;
+    }
+
+    if(expression->type == Div){
+        int value_1 = eval_expr(expression->expr_1);
+        int value_2 = eval_expr(expression->expr_2);
+
+        return value_1 / value_2;
+    }
+
+    if(expression->type == Neg){
+        int value_1 = eval_expr(expression->expr_1);
+
+        return -value_1;
+    }
+
+    if(expression->type == Var){
+        //TODO: evaluate variables
+
+        return 5;
+    }
+
     return -1;
 }
 
-parse_result parse_integer(char* str){
-    if(!is_digit(*str) && *str != '-') return INVALID_PARSE_RESULT;
+parse_result parse_add_expr(char* str){
+    parse_result mul_expr = parse_mul_expr(str);
 
-    int negative_mult = 1;
-    if(*str == '-'){
-        negative_mult = -1;
-        str++;
+    if(!mul_expr.valid) return INVALID_PARSE_RESULT;
+
+    char* remaining = mul_expr.remaining;
+    
+    while(TRUE){
+        token_result next = get_next_char(remaining);
+        
+        if(next.token != '+' && next.token != '-') break;
+
+        parse_result next_mul_expr = parse_mul_expr(next.remaining);
+
+        if(!next_mul_expr.valid) break;
+
+        expr* combined = get_expr(char_to_operator(next.token), 0, mul_expr.expression, next_mul_expr.expression);
+
+        mul_expr.expression = combined;
+        mul_expr.remaining = next_mul_expr.remaining;
+        remaining = mul_expr.remaining;
     }
+
+    return mul_expr;
+}
+
+parse_result parse_mul_expr(char* str){
+    parse_result atomic = parse_atomic(str);
+
+    if(!atomic.valid) return INVALID_PARSE_RESULT;
+
+    char* remaining = atomic.remaining;
+    
+    while(TRUE){
+        token_result next = get_next_char(remaining);
+        
+        if(next.token != '*' && next.token != '/') break;
+
+        parse_result next_atomic = parse_atomic(next.remaining);
+
+        if(!next_atomic.valid) break;
+
+        expr* combined = get_expr(char_to_operator(next.token), 0, atomic.expression, next_atomic.expression);
+
+        atomic.expression = combined;
+        atomic.remaining = next_atomic.remaining;
+        remaining = atomic.remaining;
+    }
+
+    return atomic;
+}
+
+parse_result parse_atomic(char* str){
+    token_result next = get_next_char(str);
+    if(next.token == '-'){
+        parse_result atomic = parse_atomic(next.remaining);
+        if(atomic.valid){
+            expr* neg = get_expr(Neg, 0, atomic.expression, NULL);
+            atomic.expression = neg;
+            return atomic;
+        }
+    }
+
+
+    parse_result integer = parse_integer(str);
+    if(integer.valid) return integer;
+
+    parse_result variable = parse_variable(str);
+    if(variable.valid) return variable;
+
+    parse_result parens = parse_parens(str);
+    if(parens.valid) return parens;
+
+    return INVALID_PARSE_RESULT;
+}
+
+
+parse_result parse_integer(char* str){
+    str = remove_spaces(str);
+
     if(!is_digit(*str)) return INVALID_PARSE_RESULT;
 
     char* str_start = str;
@@ -82,76 +205,52 @@ parse_result parse_integer(char* str){
         str--;
     }
 
-    expr* literal = get_expr(Lit, value*negative_mult, NULL, NULL);
+    expr* literal = get_expr(Lit, value, NULL, NULL);
     return PARSE_RESULT(literal, str_end);
 }
 
-parse_result parse_atom(char* str){
-    // Try if its a integer
-    parse_result integer = parse_integer(str);
+parse_result parse_variable(char* str){
+    str = remove_spaces(str);
 
-    if(integer.valid){
-        return integer;
+    if(!is_var_letter(*str)) return INVALID_PARSE_RESULT;
+
+    int length = 0;
+    char* name_start = str;
+    while(is_var_letter(*str) || is_digit(*str)){
+        length++;
+        str++;
     }
 
-    // Try if its an expression surrounded by brackets
-    if(*str == '('){
-        parse_result expression = parse_expr(str+1);
-        if(!expression.valid){
-            return INVALID_PARSE_RESULT;
-        }
-
-        if(*(expression.remaining) != ')'){
-            free(expression.expression);
-            return INVALID_PARSE_RESULT;
-        }
-
-        expression.remaining++;
-        return expression;
+    // allocate one more to make place for null terminator
+    char* name = (char*)malloc(length+1);
+    for(int i = 0; i < length; i++){
+        name[i] = name_start[i];
     }
+    name[length] = 0;
 
-    return INVALID_PARSE_RESULT;
+    expr* var_expr = get_var_expr(name);
+    return PARSE_RESULT(var_expr, str);
 }
 
+parse_result parse_parens(char* str){
+    token_result next = get_next_char(str);
+    if(next.token != '(') return INVALID_PARSE_RESULT;
 
-parse_result parse_oatom(char* str){
-    if(is_operator(*str)){
-        parse_result atom = parse_atom(str+1);
+    parse_result add_expr = parse_add_expr(next.remaining);
+    if(!add_expr.valid) return INVALID_PARSE_RESULT;
 
-        if(!atom.valid){
-            return INVALID_PARSE_RESULT;
-        }
-
-        expr* new_expression = get_expr(char_to_operator(*str), 0, NULL, atom.expression);
-        atom.expression = new_expression;
-        return atom;
-    }
-    return INVALID_PARSE_RESULT;
-}
-
-parse_result parse_expr(char* str){
-    parse_result atom = parse_atom(str);
-
-    if(!atom.valid) return INVALID_PARSE_RESULT;
-
-    char* remaining = atom.remaining;
-    
-    while(TRUE){
-        parse_result new_atom = parse_oatom(remaining);
-
-        if(!new_atom.valid) break;
-
-        new_atom.expression->expr_1 = atom.expression;
-        atom = new_atom;
-        remaining = atom.remaining;
+    token_result next_2 = get_next_char(add_expr.remaining);
+    if(next_2.token != ')'){
+        free_expr(add_expr.expression);
+        return INVALID_PARSE_RESULT;
     }
 
-    return atom;
+    return PARSE_RESULT(add_expr.expression, next_2.remaining);
 }
 
 // Top level function to start parsing process
 expr* str_to_expression(char* str){
-    parse_result result = parse_expr(str);
+    parse_result result = parse_add_expr(str);
     if(!result.valid) return NULL;
 
     //check if there is not additional stuff at end of string
@@ -205,4 +304,4 @@ int main(int argc, char** argv){
     return 0;
 }
 
-//TODO: create MAKE file, allow spaces, double negation, multiplication
+//TODO: dictionary, variables
