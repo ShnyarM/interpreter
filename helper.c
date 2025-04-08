@@ -1,3 +1,5 @@
+#include <string.h>
+#include <stdlib.h>
 #include "helper.h"
 
 BOOL is_digit(char c){
@@ -21,4 +23,12 @@ int char_to_digit(char c){
 char* remove_spaces(char* str){
     while(*str == ' ') str++;
     return str;
+}
+
+// Creates a copy of a string by dynamically allocating space
+char* copy_of_string(char* str){
+    size_t len = strlen(str);
+    char* new_str = (char*)malloc(len+1);
+    strncpy(new_str, str, len+1);
+    return new_str;
 }

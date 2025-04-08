@@ -1,10 +1,13 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include "main.h"
 #include "helper.h"
+#include "dictionary.h"
 
 #define EXPR_SIZE sizeof(expr)
 #define PARSE_RESULT_SIZE sizeof(parse_result)
+#define MAX_VARIABLE_LENGTH 50
 
 // <expression> ::= <add-expr>
 // <add-expr> ::= <mul-expr> (['+' | '-'] <mul-expr>)*
@@ -50,60 +53,60 @@ expr* get_expr(e_type type, int val, expr* ex_1, expr* ex_2){
     return expression;
 }
 
-// name needs to be dynamically allocated name
 expr* get_var_expr(char* name){
     expr* expression = (expr*)malloc(EXPR_SIZE);
     expression->type = Var;
     expression->val = 0;
-    expression->name = name;
+    expression->name = copy_of_string(name); //makes its own copy
     expression->expr_1 = NULL;
     expression->expr_2 = NULL;
     return expression;
 }
 
-int eval_expr(expr* expression){
+int eval_expr(expr* expression, dictionary* dict){
     if(expression->type == Lit){
         return expression->val;
     }
 
     if(expression->type == Add){
-        int value_1 = eval_expr(expression->expr_1);
-        int value_2 = eval_expr(expression->expr_2);
+        int value_1 = eval_expr(expression->expr_1, dict);
+        int value_2 = eval_expr(expression->expr_2, dict);
 
         return value_1 + value_2;
     }
 
     if(expression->type == Sub){
-        int value_1 = eval_expr(expression->expr_1);
-        int value_2 = eval_expr(expression->expr_2);
+        int value_1 = eval_expr(expression->expr_1, dict);
+        int value_2 = eval_expr(expression->expr_2, dict);
 
         return value_1 - value_2;
     }
 
     if(expression->type == Mul){
-        int value_1 = eval_expr(expression->expr_1);
-        int value_2 = eval_expr(expression->expr_2);
+        int value_1 = eval_expr(expression->expr_1, dict);
+        int value_2 = eval_expr(expression->expr_2, dict);
 
         return value_1 * value_2;
     }
 
     if(expression->type == Div){
-        int value_1 = eval_expr(expression->expr_1);
-        int value_2 = eval_expr(expression->expr_2);
+        int value_1 = eval_expr(expression->expr_1, dict);
+        int value_2 = eval_expr(expression->expr_2, dict);
 
         return value_1 / value_2;
     }
 
     if(expression->type == Neg){
-        int value_1 = eval_expr(expression->expr_1);
+        int value_1 = eval_expr(expression->expr_1, dict);
 
         return -value_1;
     }
 
     if(expression->type == Var){
-        //TODO: evaluate variables
+        dict_result var_value = dict_get(dict, expression->name);
+        if(var_value.valid) return var_value.result;
 
-        return 5;
+        return 0;
     }
 
     return -1;
@@ -214,21 +217,23 @@ parse_result parse_variable(char* str){
 
     if(!is_var_letter(*str)) return INVALID_PARSE_RESULT;
 
-    int length = 0;
+    //Limit length of variable to 50 characters
+    char buffer[MAX_VARIABLE_LENGTH+1];
+
+    int index = 0;
     char* name_start = str;
     while(is_var_letter(*str) || is_digit(*str)){
-        length++;
+        if(index >= MAX_VARIABLE_LENGTH){
+            return INVALID_PARSE_RESULT; //Variable too long
+        }
+
+        buffer[index] = name_start[index];
+        index++;
         str++;
     }
+    buffer[index] = 0;
 
-    // allocate one more to make place for null terminator
-    char* name = (char*)malloc(length+1);
-    for(int i = 0; i < length; i++){
-        name[i] = name_start[i];
-    }
-    name[length] = 0;
-
-    expr* var_expr = get_var_expr(name);
+    expr* var_expr = get_var_expr(buffer);
     return PARSE_RESULT(var_expr, str);
 }
 
@@ -271,12 +276,12 @@ BOOL is_valid_expression(char* str){
     return TRUE;
 }
 
-int calculate(char* str){
+int calculate(char* str, dictionary* dict){
     expr* expression = str_to_expression(str);
 
     if(expression == NULL) return 0;
 
-    int result = eval_expr(expression);
+    int result = eval_expr(expression, dict);
     free(expression);
     return result;
 }
@@ -292,7 +297,14 @@ int main(int argc, char** argv){
         return 1;
     }
 
-    int result = calculate(argv[1]);
+    dictionary dict = dict_new();
+    dict_add(&dict, "x", 5);
+    dict_add(&dict, "y", 1);
+    dict_add(&dict, "z", 20);
+    dict_add(&dict, "a", 40);
+    dict_add(&dict, "b", 12);
+
+    int result = calculate(argv[1], &dict);
     if(result == 0){
         if(!is_valid_expression(argv[1])){
             printf("Invalid arithmetic expression!\n");
@@ -304,4 +316,4 @@ int main(int argc, char** argv){
     return 0;
 }
 
-//TODO: dictionary, variables
+//TODO: dictionary free and valid and new when invalid, variables

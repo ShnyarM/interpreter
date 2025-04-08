@@ -18,6 +18,8 @@ typedef struct dict_result_r{
     int result;
 } dict_result;
 
-dictionary new_dictionary();
-void add_to_dictionary(dictionary* dict, char* name, int value);
-dict_result dict_get(dictionary dict, char* name);
+dictionary dict_new();
+BOOL dict_update(dictionary* dict, char* name, int value);
+void dict_add(dictionary* dict, char* name, int value);
+dict_result dict_get(dictionary* dict, char* name);
+void dict_free(dictionary* dict);
