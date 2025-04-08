@@ -38,8 +38,12 @@ BOOL dict_update(dictionary* dict, char* name, int value){
     return FALSE;
 }
 
-void dict_add(dictionary* dict, char* name, int value){
-    if(!dict_valid(dict)) return;
+void dict_add(dictionary* dict, char* name, int value){ 
+
+    //Create new dictionary if invalid
+    if(!dict_valid(dict)){
+        *dict = dict_new();
+    }
 
     if(dict->length == dict->capacity){
         dict_increase_capacity(dict);
@@ -55,6 +59,10 @@ void dict_add(dictionary* dict, char* name, int value){
 }
 
 dict_result dict_get(dictionary* dict, char* name){
+    if(!dict_valid(dict)){
+        return (dict_result){FALSE, 0};
+    }
+
     for(int i = 0; i < dict->length; i++){
         dict_entry entry = dict->list[i];
 
@@ -67,6 +75,8 @@ dict_result dict_get(dictionary* dict, char* name){
 }
 
 void dict_increase_capacity(dictionary* dict){
+    if(!dict_valid(dict)) return;
+
     int new_size = dict->capacity*2;
     dict_entry* old_list = dict->list;
     dict_entry* new_list = (dict_entry*)malloc(DICT_ENTRY_SIZE*new_size);
@@ -81,5 +91,8 @@ void dict_increase_capacity(dictionary* dict){
 }
 
 void dict_free(dictionary* dict){
-
+    free(dict->list);
+    dict->list = NULL;
+    dict->length = 0;
+    dict->capacity = 0;
 }

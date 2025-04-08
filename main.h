@@ -5,31 +5,48 @@
 #include "helper.h"
 
 typedef enum expr_type {Lit, Add, Sub, Mul, Div, Neg, Var} e_type;
+typedef enum statement_type {Ass, Print} s_type;
 
 typedef struct expression_t{
     e_type type;
-    int val;                      // Value if it is literal
-    char* name;                   // Name if it is variable
+    int val;                          // Value if it is literal
+    char* variable;                   // Name if it is variable
     struct expression_t *expr_1;
     struct expression_t *expr_2;
 } expr;
 
-typedef struct parse_result_t{
+typedef struct statement_t{
+    s_type type;
+    char* variable;
+    expr* expression;
+    struct statement_t* next_statement;
+} stmt;
+
+typedef struct parse_result_expr_t{
     BOOL valid;
     expr* expression;
     char* remaining;
-} parse_result;
+} parse_result_expr;
+
+typedef struct parse_result_statement_t{
+    BOOL valid;
+    stmt* statement;
+    char* remaining;
+} parse_result_stmt;
 
 typedef struct token_result_t{
     char token;
     char* remaining;
 } token_result;
 
-#define INVALID_PARSE_RESULT (parse_result){FALSE, NULL, NULL}
-#define PARSE_RESULT(e, r) (parse_result){TRUE, e, r}
+#define INVALID_PARSE_RESULT_EXPR (parse_result_expr){FALSE, NULL, NULL}
+#define PARSE_RESULT_EXPR(e, r) (parse_result_expr){TRUE, e, r}
 
-parse_result parse_parens(char* str);
-parse_result parse_integer(char* str);
-parse_result parse_atomic(char* str);
-parse_result parse_mul_expr(char* str);
-parse_result parse_variable(char* str);
+#define INVALID_PARSE_RESULT_STMT (parse_result_stmt){FALSE, NULL, NULL}
+#define PARSE_RESULT_STMT(s, r) (parse_result_stmt){TRUE, s, r}
+
+parse_result_expr parse_parens(char* str);
+parse_result_expr parse_integer(char* str);
+parse_result_expr parse_atomic(char* str);
+parse_result_expr parse_mul_expr(char* str);
+parse_result_expr parse_variable(char* str);

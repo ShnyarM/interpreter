@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "helper.h"
 
 BOOL is_digit(char c){
@@ -14,6 +15,20 @@ BOOL is_var_letter(char c){
     return FALSE;
 }
 
+// If word doesn't follow return NULL, else it returns point where it stopped
+char* word_follows(char* str, char* word){
+    str = remove_spaces(str);
+
+    int i = 0;
+    while(word[i] != 0){
+        if(str[i] != word[i]) return NULL;
+        i++;
+    }
+    if(str[i] != ' ' && str[i] != '\n' && str[i] != 0) return NULL;
+    
+    return str+i;
+}
+
 int char_to_digit(char c){
     if(!is_digit(c)) return 0;
 
@@ -21,7 +36,7 @@ int char_to_digit(char c){
 }
 
 char* remove_spaces(char* str){
-    while(*str == ' ') str++;
+    while(*str == ' ' || *str == '\n') str++;
     return str;
 }
 
@@ -31,4 +46,24 @@ char* copy_of_string(char* str){
     char* new_str = (char*)malloc(len+1);
     strncpy(new_str, str, len+1);
     return new_str;
+}
+
+char* file_to_string(char* filename){
+    char* buffer = 0;
+    long length;
+    FILE* f = fopen (filename, "rb");
+    
+    if (f)
+    {
+        fseek (f, 0, SEEK_END);
+        length = ftell (f);
+        fseek (f, 0, SEEK_SET);
+        buffer = malloc (length);
+        if (buffer){
+          fread (buffer, 1, length, f);
+        }
+        fclose (f);
+    }
+
+    return buffer;
 }

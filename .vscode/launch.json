@@ -8,8 +8,8 @@
             "name": "(gdb)",  // Name of the configuration
             "type": "cppdbg",        // Specifies that this is for C++
             "request": "launch",     // Launch the program
-            "program": "${workspaceFolder}/main",  // Path to your compiled executable
-            "args": ["1+(5+6))"],              // Arguments to pass to your program
+            "program": "${workspaceFolder}/main_dbg",  // Path to your compiled executable
+            "args": ["x=5;y=x+2;print y;"],              // Arguments to pass to your program
             "stopAtEntry": false,    // Whether to stop at the entry point of the program
             "cwd": "${workspaceFolder}",  // Current working directory
             "environment": [],       // Environment variables

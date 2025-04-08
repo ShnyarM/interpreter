@@ -1,6 +1,7 @@
 {
     "makefile.configureOnOpen": false,
     "files.associations": {
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "cstdlib": "c"
     }
 }
