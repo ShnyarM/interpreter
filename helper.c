@@ -16,7 +16,7 @@ BOOL is_var_letter(char c){
 }
 
 // If word doesn't follow return NULL, else it returns point where it stopped
-char* word_follows(char* str, char* word){
+char* word_follows(char* str, char* word, BOOL must_space_follow){
     str = remove_spaces(str);
 
     int i = 0;
@@ -24,7 +24,7 @@ char* word_follows(char* str, char* word){
         if(str[i] != word[i]) return NULL;
         i++;
     }
-    if(str[i] != ' ' && str[i] != '\n' && str[i] != 0) return NULL;
+    if(must_space_follow && (str[i] != ' ' && str[i] != '\n' && str[i] != 0)) return NULL;
     
     return str+i;
 }
@@ -58,12 +58,13 @@ char* file_to_string(char* filename){
         fseek (f, 0, SEEK_END);
         length = ftell (f);
         fseek (f, 0, SEEK_SET);
-        buffer = malloc (length);
+        buffer = malloc (length+1);
         if (buffer){
           fread (buffer, 1, length, f);
         }
         fclose (f);
     }
+    buffer[length] = 0;
 
     return buffer;
 }

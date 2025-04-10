@@ -10,16 +10,18 @@
 #define PARSE_RESULT_SIZE sizeof(parse_result)
 #define MAX_VARIABLE_LENGTH 50
 
-// <expression> ::= <add-expr>
-// <add-expr> ::= <mul-expr> (['+' | '-'] <mul-expr>)*
-// <mul-expr> ::= <atomic> (['*' | '/'] <atomic>)*
-// <atomic> ::= '-'<atomic> | (<literal> | <variable> | <parens>)
+// <expression> ::= <add-expr> (('==' | '<' | '<=') <add-expr>)*
+// <add-expr> ::= <mul-expr> (('+' | '-') <mul-expr>)*
+// <mul-expr> ::= <atomic> (('*' | '/') <atomic>)*
+// <atomic> ::= ['-' | '!'](<literal> | <variable> | <parens>)
 // <parens> ::= '(' <expression> ')'
 
 // <program> ::= <statement>';' (<statement>';')*
-// <statement> ::== <assignment> | <print>
-// <assignement> ::== <variable> '=' <expression>
-// <print> ::== 'print ' <expression>
+// <statement> ::== <assignment> | <if> | <while> | <print> | 'escape' | 'stop'
+// <assignment> ::== <variable> '=' <expression>
+// <if> ::== 'if (' <expression> ')' '{' <program> '}' ['else {' <program> '}']
+// <while> ::== 'while (' <expression> ')' '{' <program> '}'
+// <print> ::== 'print(' <expression> ')'
 
 BOOL is_operator(char c){
     if(c == '+' || c == '-') return TRUE;
@@ -86,6 +88,30 @@ stmt* get_ass_statement(char* variable, expr* expr, stmt* next_statement){
     statement->variable = copy_of_string(variable);
     statement->expression = expr;
     statement->next_statement = next_statement;
+    statement->inner_stmt_1 = NULL;
+    statement->inner_stmt_2 = NULL;
+    return statement;
+}
+
+stmt* get_if_statement(expr* condition, stmt* true_branch, stmt* false_branch, stmt* next_statement){
+    stmt* statement = (stmt*)malloc(STATEMENT_SIZE);
+    statement->type = If;
+    statement->variable = NULL;
+    statement->expression = condition;
+    statement->next_statement = next_statement;
+    statement->inner_stmt_1 = true_branch;
+    statement->inner_stmt_2 = false_branch;
+    return statement;
+}
+
+stmt* get_while_statement(expr* condition, stmt* true_branch, stmt* next_statement){
+    stmt* statement = (stmt*)malloc(STATEMENT_SIZE);
+    statement->type = While;
+    statement->variable = NULL;
+    statement->expression = condition;
+    statement->next_statement = next_statement;
+    statement->inner_stmt_1 = true_branch;
+    statement->inner_stmt_2 = NULL;
     return statement;
 }
 
@@ -95,6 +121,30 @@ stmt* get_print_statement(expr* expression, stmt* next_statement){
     statement->variable = NULL;
     statement->expression = expression;
     statement->next_statement = next_statement;
+    statement->inner_stmt_1 = NULL;
+    statement->inner_stmt_2 = NULL;
+    return statement;
+}
+
+stmt* get_escape_statement(){
+    stmt* statement = (stmt*)malloc(STATEMENT_SIZE);
+    statement->type = Esc;
+    statement->variable = NULL;
+    statement->expression = NULL;
+    statement->next_statement = NULL;
+    statement->inner_stmt_1 = NULL;
+    statement->inner_stmt_2 = NULL;
+    return statement;
+}
+
+stmt* get_stop_statement(){
+    stmt* statement = (stmt*)malloc(STATEMENT_SIZE);
+    statement->type = Stop;
+    statement->variable = NULL;
+    statement->expression = NULL;
+    statement->next_statement = NULL;
+    statement->inner_stmt_1 = NULL;
+    statement->inner_stmt_2 = NULL;
     return statement;
 }
 
@@ -144,11 +194,39 @@ int eval_expr(expr* expression, dictionary* dict){
         return 0;
     }
 
+    if(expression->type == Bool_Neg){
+        int value_1 = eval_expr(expression->expr_1, dict);
+
+        return !value_1;
+    }
+
+    if(expression->type == Eq){
+        int value_1 = eval_expr(expression->expr_1, dict);
+        int value_2 = eval_expr(expression->expr_2, dict);
+
+        return value_1 == value_2;
+    }
+
+    if(expression->type == Lt){
+        int value_1 = eval_expr(expression->expr_1, dict);
+        int value_2 = eval_expr(expression->expr_2, dict);
+
+        return value_1 < value_2;
+    }
+
+    if(expression->type == Lte){
+        int value_1 = eval_expr(expression->expr_1, dict);
+        int value_2 = eval_expr(expression->expr_2, dict);
+
+        return value_1 <= value_2;
+    }
+
     return -1;
 }
 
-void run_statement(stmt* statement, dictionary* dict){
-    if(statement == NULL) return;
+execution_result run_statement(stmt* statement, dictionary* dict){
+    execution_result exec = {TRUE, TRUE};
+    if(statement == NULL) return exec;
 
     if(statement->type == Ass){
         int value = eval_expr(statement->expression, dict);
@@ -160,7 +238,74 @@ void run_statement(stmt* statement, dictionary* dict){
         printf("%d\n", value);
     }
 
-    run_statement(statement->next_statement, dict);
+    if(statement->type == If){
+        if(eval_expr(statement->expression, dict)){
+            exec = run_statement(statement->inner_stmt_1, dict);
+        }else{
+            exec = run_statement(statement->inner_stmt_2, dict);
+        }
+    }
+
+    if(statement->type == While){
+        while(eval_expr(statement->expression, dict)){
+            exec = run_statement(statement->inner_stmt_1, dict);
+            if(!exec.succesful || !exec.execute_next) break;
+        }
+    }
+
+    if(statement->type == Esc){
+        //Do not run next statement
+        return exec;
+    }
+
+    if(statement->type == Stop){
+        //Do not run next statement and stop execution
+        return (execution_result){TRUE, FALSE};
+    }
+
+    if(!exec.succesful || !exec.execute_next) return exec;
+    return run_statement(statement->next_statement, dict);   
+}
+
+parse_result_expr parse_expr(char* str){
+    parse_result_expr add_expr = parse_add_expr(str);
+
+    if(!add_expr.valid) return INVALID_PARSE_RESULT_EXPR;
+
+    char* remaining = add_expr.remaining;
+    
+    while(TRUE){
+        // Get possible operator, looks very ugly
+        e_type operator;
+        char* next = word_follows(remaining, "==", FALSE);
+
+        if(next == NULL){
+            next = word_follows(remaining, "<=", FALSE);
+
+            if(next == NULL){
+                next = word_follows(remaining, "<", FALSE);
+                if(next == NULL) break;
+
+                operator = Lt;
+            }else{
+                operator = Lte;
+            }
+        }else{
+            operator = Eq;
+        }
+
+        parse_result_expr next_add_expr = parse_add_expr(next);
+
+        if(!next_add_expr.valid) break;
+
+        expr* combined = get_expr(operator, 0, add_expr.expression, next_add_expr.expression);
+
+        add_expr.expression = combined;
+        add_expr.remaining = next_add_expr.remaining;
+        remaining = add_expr.remaining;
+    }
+
+    return add_expr;
 }
 
 parse_result_expr parse_add_expr(char* str){
@@ -222,6 +367,14 @@ parse_result_expr parse_atomic(char* str){
         if(atomic.valid){
             expr* neg = get_expr(Neg, 0, atomic.expression, NULL);
             atomic.expression = neg;
+            return atomic;
+        }
+    }
+    if(next.token == '!'){
+        parse_result_expr atomic = parse_atomic(next.remaining);
+        if(atomic.valid){
+            expr* bool_neg = get_expr(Bool_Neg, 0, atomic.expression, NULL);
+            atomic.expression = bool_neg;
             return atomic;
         }
     }
@@ -292,16 +445,16 @@ parse_result_expr parse_parens(char* str){
     token_result next = get_next_char(str);
     if(next.token != '(') return INVALID_PARSE_RESULT_EXPR;
 
-    parse_result_expr add_expr = parse_add_expr(next.remaining);
-    if(!add_expr.valid) return INVALID_PARSE_RESULT_EXPR;
+    parse_result_expr expr = parse_expr(next.remaining);
+    if(!expr.valid) return INVALID_PARSE_RESULT_EXPR;
 
-    token_result next_2 = get_next_char(add_expr.remaining);
+    token_result next_2 = get_next_char(expr.remaining);
     if(next_2.token != ')'){
-        free_expr(add_expr.expression);
+        free_expr(expr.expression);
         return INVALID_PARSE_RESULT_EXPR;
     }
 
-    return PARSE_RESULT_EXPR(add_expr.expression, next_2.remaining);
+    return PARSE_RESULT_EXPR(expr.expression, next_2.remaining);
 }
 
 parse_result_stmt parse_assignment(char* str){
@@ -309,12 +462,12 @@ parse_result_stmt parse_assignment(char* str){
     if(!variable.valid) return INVALID_PARSE_RESULT_STMT;
 
     token_result next = get_next_char(variable.remaining);
-    if(!next.token){
+    if(next.token != '='){
         free(variable.expression);
         return INVALID_PARSE_RESULT_STMT;
     }
 
-    parse_result_expr expression = parse_add_expr(next.remaining);
+    parse_result_expr expression = parse_expr(next.remaining);
     if(!expression.valid){
         free(variable.expression);
         return INVALID_PARSE_RESULT_STMT;
@@ -324,25 +477,145 @@ parse_result_stmt parse_assignment(char* str){
     return PARSE_RESULT_STMT(statement, expression.remaining);
 }
 
+parse_result_stmt parse_if(char* str){
+    char* if_str = word_follows(str, "if", FALSE);
+    if(if_str == NULL) return INVALID_PARSE_RESULT_STMT;
+
+    token_result open_bracket = get_next_char(if_str);
+    if(open_bracket.token != '(') return INVALID_PARSE_RESULT_STMT;
+
+    parse_result_expr expression_1 = parse_expr(open_bracket.remaining);
+    if(!expression_1.valid) return INVALID_PARSE_RESULT_STMT;
+
+    token_result close_bracket = get_next_char(expression_1.remaining);
+    if(close_bracket.token != ')'){
+        free_expr(expression_1.expression);
+        return INVALID_PARSE_RESULT_STMT;
+    }
+
+    token_result open_curly_bracket = get_next_char(close_bracket.remaining);
+    if(open_curly_bracket.token != '{'){
+        free_expr(expression_1.expression);
+        return INVALID_PARSE_RESULT_STMT;
+    }
+
+    parse_result_stmt program_1 = parse_program(open_curly_bracket.remaining);
+    if(!program_1.valid){
+        free_expr(expression_1.expression);
+        return INVALID_PARSE_RESULT_STMT;
+    }
+
+    token_result close_curly_bracket = get_next_char(program_1.remaining);
+    if(close_curly_bracket.token != '}'){
+        free_expr(expression_1.expression);
+        free_stmt(program_1.statement);
+        return INVALID_PARSE_RESULT_STMT;
+    }
+
+    // construct statement which will be returned if else fails
+    stmt* final_stmt = get_if_statement(expression_1.expression, program_1.statement, NULL, NULL);
+    parse_result_stmt final = PARSE_RESULT_STMT(final_stmt, close_curly_bracket.remaining);
+
+    // From here on else keyword, which is optional
+    char* else_str = word_follows(close_curly_bracket.remaining, "else", FALSE);
+    if(else_str == NULL) return final;
+
+    open_curly_bracket = get_next_char(else_str);
+    if(open_curly_bracket.token != '{') return final;
+
+    parse_result_stmt program_2 = parse_program(open_curly_bracket.remaining);
+    if(!program_2.valid) return final;
+
+    close_curly_bracket = get_next_char(program_2.remaining);
+    if(close_curly_bracket.token != '}'){
+        free_stmt(program_2.statement);
+        return final;
+    }
+
+    //else was succesful, add to previous if statement
+    final_stmt->inner_stmt_2 = program_2.statement;
+    final.remaining = close_curly_bracket.remaining;
+
+    return final;
+}
+
+parse_result_stmt parse_while(char* str){
+    char* while_str = word_follows(str, "while", FALSE);
+    if(while_str == NULL) return INVALID_PARSE_RESULT_STMT;
+
+    token_result open_bracket = get_next_char(while_str);
+    if(open_bracket.token != '(') return INVALID_PARSE_RESULT_STMT;
+
+    parse_result_expr expression_1 = parse_expr(open_bracket.remaining);
+    if(!expression_1.valid) return INVALID_PARSE_RESULT_STMT;
+
+    token_result close_bracket = get_next_char(expression_1.remaining);
+    if(close_bracket.token != ')'){
+        free_expr(expression_1.expression);
+        return INVALID_PARSE_RESULT_STMT;
+    }
+
+    token_result open_curly_bracket = get_next_char(close_bracket.remaining);
+    if(open_curly_bracket.token != '{'){
+        free_expr(expression_1.expression);
+        return INVALID_PARSE_RESULT_STMT;
+    }
+
+    parse_result_stmt program_1 = parse_program(open_curly_bracket.remaining);
+    if(!program_1.valid){
+        free_expr(expression_1.expression);
+        return INVALID_PARSE_RESULT_STMT;
+    }
+
+    token_result close_curly_bracket = get_next_char(program_1.remaining);
+    if(close_curly_bracket.token != '}'){
+        free_expr(expression_1.expression);
+        free_stmt(program_1.statement);
+        return INVALID_PARSE_RESULT_STMT;
+    }
+
+    // construct statement which will be returned if else fails
+    stmt* final_stmt = get_while_statement(expression_1.expression, program_1.statement, NULL);
+    parse_result_stmt final = PARSE_RESULT_STMT(final_stmt, close_curly_bracket.remaining);
+
+    return final;
+}
+
 parse_result_stmt parse_print(char* str){
-    char* print = word_follows(str, "print");
+    char* print = word_follows(str, "print(", FALSE);
     if(print == NULL) return INVALID_PARSE_RESULT_STMT;
 
-    parse_result_expr expression = parse_add_expr(print);
+    parse_result_expr expression = parse_expr(print);
     if(!expression.valid) return INVALID_PARSE_RESULT_STMT;
 
+    token_result next = get_next_char(expression.remaining);
+    if(next.token != ')'){
+        free_expr(expression.expression);
+        return INVALID_PARSE_RESULT_STMT;
+    }
+
     stmt* statement = get_print_statement(expression.expression, NULL);
-    return PARSE_RESULT_STMT(statement, expression.remaining);
+    return PARSE_RESULT_STMT(statement, next.remaining);
 }
 
 parse_result_stmt parse_statement(char* str){
     parse_result_stmt assignment = parse_assignment(str);
     if(assignment.valid) return assignment;
 
-    //TODO: Add if statement
+    parse_result_stmt if_statement = parse_if(str);
+    if(if_statement.valid) return if_statement;
+
+    parse_result_stmt while_statement = parse_while(str);
+    if(while_statement.valid) return while_statement;
 
     parse_result_stmt print = parse_print(str);
     if(print.valid) return print;
+
+    char* escape = word_follows(str, "escape", FALSE);
+    if(escape != NULL) return PARSE_RESULT_STMT(get_escape_statement(), escape);
+
+    char* stop = word_follows(str, "stop", FALSE);
+    if(stop != NULL) return PARSE_RESULT_STMT(get_stop_statement(), stop);
 
     return INVALID_PARSE_RESULT_STMT;
 }
@@ -466,4 +739,4 @@ int main(int argc, char** argv){
     return 0;
 }
 
-//TODO: if and while statements
+//TODO: escape statement, look if execution result correct, change token_result to follows_char, clean everything up
