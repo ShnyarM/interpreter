@@ -739,4 +739,4 @@ int main(int argc, char** argv){
     return 0;
 }
 
-//TODO: escape statement, look if execution result correct, change token_result to follows_char, clean everything up
+//TODO: escape statement for while loops, look if execution result correct, change token_result to follows_char, clean everything up
