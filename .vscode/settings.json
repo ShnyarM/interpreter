@@ -2,6 +2,10 @@
     "makefile.configureOnOpen": false,
     "files.associations": {
         "typeinfo": "c",
-        "cstdlib": "c"
+        "cstdlib": "c",
+        "stmt_parser.h": "c",
+        "helper.h": "c",
+        "types.h": "c",
+        "expr_parser.h": "c"
     }
 }

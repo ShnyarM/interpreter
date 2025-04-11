@@ -6,7 +6,7 @@
 #define INIT_SIZE 1
 #define DICT_ENTRY_SIZE sizeof(dict_entry)
 
-void dict_increase_capacity(dictionary* dict);
+static void dict_increase_capacity(dictionary* dict);
 
 dictionary dict_new(){
     //Create new dictionary with size INIT_SIZE
@@ -18,7 +18,7 @@ dictionary dict_new(){
     return dict;
 }
 
-BOOL dict_valid(dictionary* dict){
+static BOOL dict_valid(dictionary* dict){
     if(dict->list == NULL) return FALSE;
     return TRUE;
 }
@@ -74,7 +74,7 @@ dict_result dict_get(dictionary* dict, char* name){
     return (dict_result){FALSE, 0};
 }
 
-void dict_increase_capacity(dictionary* dict){
+static void dict_increase_capacity(dictionary* dict){
     if(!dict_valid(dict)) return;
 
     int new_size = dict->capacity*2;
@@ -91,6 +91,11 @@ void dict_increase_capacity(dictionary* dict){
 }
 
 void dict_free(dictionary* dict){
+    //Free each variable string
+    for(int i = 0; i < dict->length; i++){
+        free(dict->list[i].name);
+    }
+
     free(dict->list);
     dict->list = NULL;
     dict->length = 0;
