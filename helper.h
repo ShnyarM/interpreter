@@ -7,6 +7,7 @@ typedef uint8_t BOOL;
 
 BOOL is_digit(char c);
 BOOL is_var_letter(char c);
+char* char_follows(char* str, char c, BOOL must_space_follow);
 char* word_follows(char* str, char* word, BOOL must_space_follow);
 int char_to_digit(char c);
 char* remove_spaces(char* str);

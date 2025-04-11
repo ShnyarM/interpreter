@@ -17,7 +17,7 @@
 // <parens> ::= '(' <expression> ')'
 
 // <program> ::= <statement>';' (<statement>';')*
-// <statement> ::== <assignment> | <if> | <while> | <print> | 'escape' | 'stop'
+// <statement> ::== <assignment> | <if> | <while> | <print> | 'break' | 'stop'
 // <assignment> ::== <variable> '=' <expression>
 // <if> ::== 'if (' <expression> ')' '{' <program> '}' ['else {' <program> '}']
 // <while> ::== 'while (' <expression> ')' '{' <program> '}'
@@ -126,9 +126,9 @@ stmt* get_print_statement(expr* expression, stmt* next_statement){
     return statement;
 }
 
-stmt* get_escape_statement(){
+stmt* get_break_statement(){
     stmt* statement = (stmt*)malloc(STATEMENT_SIZE);
-    statement->type = Esc;
+    statement->type = Brk;
     statement->variable = NULL;
     statement->expression = NULL;
     statement->next_statement = NULL;
@@ -225,7 +225,7 @@ int eval_expr(expr* expression, dictionary* dict){
 }
 
 execution_result run_statement(stmt* statement, dictionary* dict){
-    execution_result exec = {TRUE, TRUE};
+    execution_result exec = {TRUE, FALSE, FALSE};
     if(statement == NULL) return exec;
 
     if(statement->type == Ass){
@@ -249,21 +249,25 @@ execution_result run_statement(stmt* statement, dictionary* dict){
     if(statement->type == While){
         while(eval_expr(statement->expression, dict)){
             exec = run_statement(statement->inner_stmt_1, dict);
-            if(!exec.succesful || !exec.execute_next) break;
+            if(!exec.succesful || exec.stop_execution || exec.break_while){
+                exec.break_while = FALSE;
+                break;
+            }
         }
     }
 
-    if(statement->type == Esc){
+    if(statement->type == Brk){
         //Do not run next statement
+        exec.break_while = TRUE;
         return exec;
     }
 
     if(statement->type == Stop){
         //Do not run next statement and stop execution
-        return (execution_result){TRUE, FALSE};
+        exec.stop_execution = TRUE;
     }
 
-    if(!exec.succesful || !exec.execute_next) return exec;
+    if(!exec.succesful || exec.stop_execution || exec.break_while) return exec;
     return run_statement(statement->next_statement, dict);   
 }
 
@@ -442,19 +446,19 @@ parse_result_expr parse_variable(char* str){
 }
 
 parse_result_expr parse_parens(char* str){
-    token_result next = get_next_char(str);
-    if(next.token != '(') return INVALID_PARSE_RESULT_EXPR;
+    char* parens_open = char_follows(str, '(', FALSE);
+    if(parens_open == NULL) return INVALID_PARSE_RESULT_EXPR;
 
-    parse_result_expr expr = parse_expr(next.remaining);
+    parse_result_expr expr = parse_expr(parens_open);
     if(!expr.valid) return INVALID_PARSE_RESULT_EXPR;
 
-    token_result next_2 = get_next_char(expr.remaining);
-    if(next_2.token != ')'){
+    char* parens_close = char_follows(expr.remaining, ')', FALSE);
+    if(parens_close == NULL){
         free_expr(expr.expression);
         return INVALID_PARSE_RESULT_EXPR;
     }
 
-    return PARSE_RESULT_EXPR(expr.expression, next_2.remaining);
+    return PARSE_RESULT_EXPR(expr.expression, parens_close);
 }
 
 parse_result_stmt parse_assignment(char* str){
@@ -481,32 +485,32 @@ parse_result_stmt parse_if(char* str){
     char* if_str = word_follows(str, "if", FALSE);
     if(if_str == NULL) return INVALID_PARSE_RESULT_STMT;
 
-    token_result open_bracket = get_next_char(if_str);
-    if(open_bracket.token != '(') return INVALID_PARSE_RESULT_STMT;
+    char* open_bracket = char_follows(if_str, '(', FALSE);
+    if(open_bracket == NULL) return INVALID_PARSE_RESULT_STMT;
 
-    parse_result_expr expression_1 = parse_expr(open_bracket.remaining);
+    parse_result_expr expression_1 = parse_expr(open_bracket);
     if(!expression_1.valid) return INVALID_PARSE_RESULT_STMT;
 
-    token_result close_bracket = get_next_char(expression_1.remaining);
-    if(close_bracket.token != ')'){
+    char* close_bracket = char_follows(expression_1.remaining, ')', FALSE);
+    if(close_bracket == NULL){
         free_expr(expression_1.expression);
         return INVALID_PARSE_RESULT_STMT;
     }
 
-    token_result open_curly_bracket = get_next_char(close_bracket.remaining);
-    if(open_curly_bracket.token != '{'){
+    char* open_curly_bracket = char_follows(close_bracket, '{', FALSE);
+    if(open_curly_bracket == NULL){
         free_expr(expression_1.expression);
         return INVALID_PARSE_RESULT_STMT;
     }
 
-    parse_result_stmt program_1 = parse_program(open_curly_bracket.remaining);
+    parse_result_stmt program_1 = parse_program(open_curly_bracket);
     if(!program_1.valid){
         free_expr(expression_1.expression);
         return INVALID_PARSE_RESULT_STMT;
     }
 
-    token_result close_curly_bracket = get_next_char(program_1.remaining);
-    if(close_curly_bracket.token != '}'){
+    char* close_curly_bracket = char_follows(program_1.remaining, '}', FALSE);
+    if(close_curly_bracket == NULL){
         free_expr(expression_1.expression);
         free_stmt(program_1.statement);
         return INVALID_PARSE_RESULT_STMT;
@@ -514,27 +518,27 @@ parse_result_stmt parse_if(char* str){
 
     // construct statement which will be returned if else fails
     stmt* final_stmt = get_if_statement(expression_1.expression, program_1.statement, NULL, NULL);
-    parse_result_stmt final = PARSE_RESULT_STMT(final_stmt, close_curly_bracket.remaining);
+    parse_result_stmt final = PARSE_RESULT_STMT(final_stmt, close_curly_bracket);
 
     // From here on else keyword, which is optional
-    char* else_str = word_follows(close_curly_bracket.remaining, "else", FALSE);
+    char* else_str = word_follows(close_curly_bracket, "else", FALSE);
     if(else_str == NULL) return final;
 
-    open_curly_bracket = get_next_char(else_str);
-    if(open_curly_bracket.token != '{') return final;
+    open_curly_bracket = char_follows(else_str, '{', FALSE);
+    if(open_curly_bracket == NULL) return final;
 
-    parse_result_stmt program_2 = parse_program(open_curly_bracket.remaining);
+    parse_result_stmt program_2 = parse_program(open_curly_bracket);
     if(!program_2.valid) return final;
 
-    close_curly_bracket = get_next_char(program_2.remaining);
-    if(close_curly_bracket.token != '}'){
+    close_curly_bracket = char_follows(program_2.remaining, '}', FALSE);
+    if(close_curly_bracket == NULL){
         free_stmt(program_2.statement);
         return final;
     }
 
     //else was succesful, add to previous if statement
     final_stmt->inner_stmt_2 = program_2.statement;
-    final.remaining = close_curly_bracket.remaining;
+    final.remaining = close_curly_bracket;
 
     return final;
 }
@@ -543,32 +547,32 @@ parse_result_stmt parse_while(char* str){
     char* while_str = word_follows(str, "while", FALSE);
     if(while_str == NULL) return INVALID_PARSE_RESULT_STMT;
 
-    token_result open_bracket = get_next_char(while_str);
-    if(open_bracket.token != '(') return INVALID_PARSE_RESULT_STMT;
+    char* open_bracket = char_follows(while_str, '(', FALSE);
+    if(open_bracket == NULL) return INVALID_PARSE_RESULT_STMT;
 
-    parse_result_expr expression_1 = parse_expr(open_bracket.remaining);
+    parse_result_expr expression_1 = parse_expr(open_bracket);
     if(!expression_1.valid) return INVALID_PARSE_RESULT_STMT;
 
-    token_result close_bracket = get_next_char(expression_1.remaining);
-    if(close_bracket.token != ')'){
+    char* close_bracket = char_follows(expression_1.remaining, ')', FALSE);
+    if(close_bracket == NULL){
         free_expr(expression_1.expression);
         return INVALID_PARSE_RESULT_STMT;
     }
 
-    token_result open_curly_bracket = get_next_char(close_bracket.remaining);
-    if(open_curly_bracket.token != '{'){
+    char* open_curly_bracket = char_follows(close_bracket, '{', FALSE);
+    if(open_curly_bracket == NULL){
         free_expr(expression_1.expression);
         return INVALID_PARSE_RESULT_STMT;
     }
 
-    parse_result_stmt program_1 = parse_program(open_curly_bracket.remaining);
+    parse_result_stmt program_1 = parse_program(open_curly_bracket);
     if(!program_1.valid){
         free_expr(expression_1.expression);
         return INVALID_PARSE_RESULT_STMT;
     }
 
-    token_result close_curly_bracket = get_next_char(program_1.remaining);
-    if(close_curly_bracket.token != '}'){
+    char* close_curly_bracket = char_follows(program_1.remaining, '}', FALSE);
+    if(close_curly_bracket == NULL){
         free_expr(expression_1.expression);
         free_stmt(program_1.statement);
         return INVALID_PARSE_RESULT_STMT;
@@ -576,7 +580,7 @@ parse_result_stmt parse_while(char* str){
 
     // construct statement which will be returned if else fails
     stmt* final_stmt = get_while_statement(expression_1.expression, program_1.statement, NULL);
-    parse_result_stmt final = PARSE_RESULT_STMT(final_stmt, close_curly_bracket.remaining);
+    parse_result_stmt final = PARSE_RESULT_STMT(final_stmt, close_curly_bracket);
 
     return final;
 }
@@ -588,14 +592,14 @@ parse_result_stmt parse_print(char* str){
     parse_result_expr expression = parse_expr(print);
     if(!expression.valid) return INVALID_PARSE_RESULT_STMT;
 
-    token_result next = get_next_char(expression.remaining);
-    if(next.token != ')'){
+    char* next = char_follows(expression.remaining, ')', FALSE);
+    if(next == NULL){
         free_expr(expression.expression);
         return INVALID_PARSE_RESULT_STMT;
     }
 
     stmt* statement = get_print_statement(expression.expression, NULL);
-    return PARSE_RESULT_STMT(statement, next.remaining);
+    return PARSE_RESULT_STMT(statement, next);
 }
 
 parse_result_stmt parse_statement(char* str){
@@ -611,8 +615,8 @@ parse_result_stmt parse_statement(char* str){
     parse_result_stmt print = parse_print(str);
     if(print.valid) return print;
 
-    char* escape = word_follows(str, "escape", FALSE);
-    if(escape != NULL) return PARSE_RESULT_STMT(get_escape_statement(), escape);
+    char* break_statement = word_follows(str, "break", FALSE);
+    if(break_statement != NULL) return PARSE_RESULT_STMT(get_break_statement(), break_statement);
 
     char* stop = word_follows(str, "stop", FALSE);
     if(stop != NULL) return PARSE_RESULT_STMT(get_stop_statement(), stop);
@@ -628,11 +632,11 @@ parse_result_stmt parse_program(char* str){
     stmt* last_statement = statement.statement; //Last statement we have parsed
     
     while(TRUE){
-        token_result next = get_next_char(remaining);
+        char* next = char_follows(remaining, ';', FALSE);
         
-        if(next.token != ';') break;
+        if(next == NULL) break;
 
-        parse_result_stmt next_statement = parse_statement(next.remaining);
+        parse_result_stmt next_statement = parse_statement(next);
 
         if(!next_statement.valid) break;
 
@@ -643,12 +647,12 @@ parse_result_stmt parse_program(char* str){
         remaining = statement.remaining;
     }
 
-    token_result last = get_next_char(remaining);
-    if(last.token != ';'){
+    char* last = char_follows(remaining, ';', FALSE);
+    if(last == NULL){
         free_stmt(statement.statement);
         return INVALID_PARSE_RESULT_STMT;
     }
-    statement.remaining = last.remaining;
+    statement.remaining = last;
 
     return statement;
 }
@@ -739,4 +743,4 @@ int main(int argc, char** argv){
     return 0;
 }
 
-//TODO: escape statement for while loops, look if execution result correct, change token_result to follows_char, clean everything up
+//TODO: clean everything up

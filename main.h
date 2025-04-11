@@ -5,7 +5,7 @@
 #include "helper.h"
 
 typedef enum expr_type {Lit, Add, Sub, Mul, Div, Neg, Var, Bool_Neg, Eq, Lt, Lte} e_type;
-typedef enum statement_type {Ass, Print, If, While, Esc, Stop} s_type;
+typedef enum statement_type {Ass, Print, If, While, Brk, Stop} s_type;
 
 typedef struct expression_t{
     e_type type;
@@ -44,7 +44,8 @@ typedef struct token_result_t{
 
 typedef struct execution_result_t{
     BOOL succesful;
-    BOOL execute_next;
+    BOOL stop_execution;
+    BOOL break_while;
 } execution_result;
 
 #define INVALID_PARSE_RESULT_EXPR (parse_result_expr){FALSE, NULL, NULL}

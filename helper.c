@@ -15,6 +15,15 @@ BOOL is_var_letter(char c){
     return FALSE;
 }
 
+// If char doesn't follow, then return NULL, else return pointer after char
+char* char_follows(char* str, char c, BOOL must_space_follow){
+    str = remove_spaces(str);
+    if(*str != c) return NULL;
+    if(must_space_follow && (str[1] != ' ' && str[1] != '\n' && str[1] != 0)) return NULL;
+
+    return str+1;
+}
+
 // If word doesn't follow return NULL, else it returns point where it stopped
 char* word_follows(char* str, char* word, BOOL must_space_follow){
     str = remove_spaces(str);
