@@ -10,4 +10,9 @@ typedef struct execution_result_t{
     BOOL break_while;
 } execution_result;
 
+typedef struct expr_eval_result_t{
+    BOOL succesful;
+    int value;
+} expr_eval_result;
+
 execution_result run_statement(stmt* statement, dictionary* dict);
