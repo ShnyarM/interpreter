@@ -72,6 +72,8 @@ char* file_to_string(char* filename){
           fread (buffer, 1, length, f);
         }
         fclose (f);
+    }else{
+        return NULL;
     }
     buffer[length] = 0;
 

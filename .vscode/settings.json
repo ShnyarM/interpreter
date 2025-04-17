@@ -6,6 +6,7 @@
         "stmt_parser.h": "c",
         "helper.h": "c",
         "types.h": "c",
-        "expr_parser.h": "c"
+        "expr_parser.h": "c",
+        "dictionary.h": "c"
     }
 }

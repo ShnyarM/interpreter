@@ -8,6 +8,8 @@
 
 size_t MAX_VARIABLE_LENGTH = 50;
 
+extern char EXEC_ERROR_MESSAGE[];
+
 // <expression> ::= <add-expr> (('==' | '<' | '<=') <add-expr>)*
 // <add-expr> ::= <mul-expr> (('+' | '-') <mul-expr>)*
 // <mul-expr> ::= <atomic> (('*' | '/') <atomic>)*
@@ -33,10 +35,15 @@ int execute_program(char* str){
 
     dictionary dict = dict_new();
 
-    run_statement(program.statement, &dict);
+    execution_result exec = run_statement(program.statement, &dict);
 
     dict_free(&dict);
     free_stmt(program.statement);
+
+    if(!exec.succesful){
+        printf("There was an error while running the script. Error:\n%s\n", EXEC_ERROR_MESSAGE);
+        return 1;
+    }
 
     return 0;
 }
@@ -48,14 +55,14 @@ int main(int argc, char** argv){
     }
 
     char* file_contents = file_to_string(argv[1]);
-    int result = execute_program(file_contents);
-    if(result != 0){
-        printf("Program is invalid!.\n");
+    if(file_contents == NULL){
+        printf("File doesn't exist.\n");
         return 1;
     }
+    int result = execute_program(file_contents);
     free(file_contents);
 
-    return 0;
+    return result;
 }
 
-//TODO: error messages for execution, error messages for parsing
+//TODO: error messages for parsing
