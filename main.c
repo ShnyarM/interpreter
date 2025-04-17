@@ -70,3 +70,4 @@ int main(int argc, char** argv){
 }
 
 //TODO: save lines in statements and expressions, show line in runtime errors, a lot of testing...
+// make execution use iteration for statements instead of recursion, clean up program parsing
