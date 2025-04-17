@@ -8,6 +8,7 @@ typedef struct parse_result_statement_t{
     BOOL valid;
     stmt* statement;
     char* remaining;
+    BOOL fatal;         //If this is true mistake in code was found, abort everything and give error
 } parse_result_stmt;
 
 parse_result_stmt parse_program(char* str);

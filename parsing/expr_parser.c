@@ -3,12 +3,30 @@
 #include "expr_parser.h"
 #include "_parser_helper.h"
 
-#define INVALID_PARSE_RESULT_EXPR \
-    (parse_result_expr) { FALSE, NULL, NULL }
-#define PARSE_RESULT_EXPR(e, r) \
-    (parse_result_expr) { TRUE, e, r }
+#define INVALID_PARSE_RESULT_EXPR (parse_result_expr) { FALSE, NULL, NULL, FALSE }
+#define FATAL_PARSE_RESULT_EXPR (parse_result_expr){FALSE, NULL, NULL, TRUE}
+#define PARSE_RESULT_EXPR(e, r) (parse_result_expr) { TRUE, e, r, FALSE }
+
+#define PARSE_INIT size_t ORIG_LINE_COUNT = LINE_COUNTER;
+#define REVERT {LINE_COUNTER = ORIG_LINE_COUNT;return INVALID_PARSE_RESULT_EXPR;}
+#define FATAL_REVERT(reason) {write_parse_error(reason); return FATAL_PARSE_RESULT_EXPR;}
+
+#define FATAL_CHECK(f) if(f.fatal){return FATAL_PARSE_RESULT_EXPR;}
+#define FATAL_CHECK_WITH_FREE_STMT(f, s)if(f.fatal){free_stmt(s); return FATAL_PARSE_RESULT_EXPR;}
+#define FATAL_CHECK_WITH_FREE_EXPR(f, e)if(f.fatal){free_expr(e); return FATAL_PARSE_RESULT_EXPR;}
+
+#define FATAL_CHECK_NULL(f, msg) if(f==NULL){FATAL_REVERT(msg)}
+#define FATAL_CHECK_NULL_WITH_FREE_STMT(f, msg, s) if(f==NULL){free_stmt(s);FATAL_REVERT(msg)}
+#define FATAL_CHECK_NULL_WITH_FREE_EXPR(f, msg, e) if(f==NULL){free_expr(e);FATAL_REVERT(msg)}
+
+//Standard error messages
+extern char OPENING_BRACKET_ERROR[];
+extern char CLOSING_BRACKET_ERROR[];
+extern char OPENING_CURLY_BRACKET_ERROR[];
+extern char CLOSING_CURLY_BRACKET_ERROR[];
 
 extern size_t MAX_VARIABLE_LENGTH;
+extern size_t LINE_COUNTER;
 
 static parse_result_expr parse_add_expr(char *str);
 static parse_result_expr parse_mul_expr(char *str);
@@ -51,16 +69,19 @@ static expr *get_var_expr(char *name)
 }
 
 parse_result_expr parse_expr(char *str)
-{
-    parse_result_expr add_expr = parse_add_expr(str);
+{   
+    PARSE_INIT
 
-    if (!add_expr.valid)
-        return INVALID_PARSE_RESULT_EXPR;
+    parse_result_expr add_expr = parse_add_expr(str);
+    FATAL_CHECK(add_expr)
+    if (!add_expr.valid) REVERT
 
     char *remaining = add_expr.remaining;
 
     while (TRUE)
     {
+        size_t counter_before = LINE_COUNTER;
+        
         // Get possible operator, looks very ugly
         e_type operator;
         char *next = word_follows(remaining, "==", FALSE);
@@ -72,8 +93,10 @@ parse_result_expr parse_expr(char *str)
             if (next == NULL)
             {
                 next = word_follows(remaining, "<", FALSE);
-                if (next == NULL)
+                if (next == NULL){
+                    LINE_COUNTER = counter_before;
                     break;
+                }
 
                 operator= Lt;
             }
@@ -88,9 +111,11 @@ parse_result_expr parse_expr(char *str)
         }
 
         parse_result_expr next_add_expr = parse_add_expr(next);
-
-        if (!next_add_expr.valid)
+        FATAL_CHECK_WITH_FREE_EXPR(next_add_expr, add_expr.expression)
+        if (!next_add_expr.valid){
+            LINE_COUNTER = counter_before;
             break;
+        }
 
         expr *combined = get_expr(operator, 0, add_expr.expression, next_add_expr.expression);
 
@@ -104,24 +129,31 @@ parse_result_expr parse_expr(char *str)
 
 static parse_result_expr parse_add_expr(char *str)
 {
-    parse_result_expr mul_expr = parse_mul_expr(str);
+    PARSE_INIT
 
-    if (!mul_expr.valid)
-        return INVALID_PARSE_RESULT_EXPR;
+    parse_result_expr mul_expr = parse_mul_expr(str);
+    FATAL_CHECK(mul_expr)
+    if (!mul_expr.valid) REVERT
 
     char *remaining = mul_expr.remaining;
 
     while (TRUE)
     {
+        size_t counter_before = LINE_COUNTER;
+
         token_result next = get_next_char(remaining);
 
-        if (next.token != '+' && next.token != '-')
+        if (next.token != '+' && next.token != '-'){
+            LINE_COUNTER = counter_before;
             break;
+        }
 
         parse_result_expr next_mul_expr = parse_mul_expr(next.remaining);
-
-        if (!next_mul_expr.valid)
+        FATAL_CHECK_WITH_FREE_EXPR(next_mul_expr, mul_expr.expression)
+        if (!next_mul_expr.valid){
+            LINE_COUNTER = counter_before;
             break;
+        }
 
         expr *combined = get_expr(char_to_operator(next.token), 0, mul_expr.expression, next_mul_expr.expression);
 
@@ -135,24 +167,31 @@ static parse_result_expr parse_add_expr(char *str)
 
 static parse_result_expr parse_mul_expr(char *str)
 {
-    parse_result_expr atomic = parse_atomic(str);
+    PARSE_INIT
 
-    if (!atomic.valid)
-        return INVALID_PARSE_RESULT_EXPR;
+    parse_result_expr atomic = parse_atomic(str);
+    FATAL_CHECK(atomic)
+    if (!atomic.valid) REVERT
 
     char *remaining = atomic.remaining;
 
     while (TRUE)
     {
+        size_t counter_before = LINE_COUNTER;
+
         token_result next = get_next_char(remaining);
 
-        if (next.token != '*' && next.token != '/')
+        if (next.token != '*' && next.token != '/'){
+            LINE_COUNTER = counter_before;
             break;
+        }
 
         parse_result_expr next_atomic = parse_atomic(next.remaining);
-
-        if (!next_atomic.valid)
+        FATAL_CHECK_WITH_FREE_EXPR(next_atomic, atomic.expression)
+        if (!next_atomic.valid){
+            LINE_COUNTER = counter_before;
             break;
+        }
 
         expr *combined = get_expr(char_to_operator(next.token), 0, atomic.expression, next_atomic.expression);
 
@@ -166,10 +205,13 @@ static parse_result_expr parse_mul_expr(char *str)
 
 static parse_result_expr parse_atomic(char *str)
 {
+    PARSE_INIT
+
     token_result next = get_next_char(str);
     if (next.token == '-')
     {
         parse_result_expr atomic = parse_atomic(next.remaining);
+        FATAL_CHECK(atomic)
         if (atomic.valid)
         {
             expr *neg = get_expr(Neg, 0, atomic.expression, NULL);
@@ -180,6 +222,7 @@ static parse_result_expr parse_atomic(char *str)
     if (next.token == '!')
     {
         parse_result_expr atomic = parse_atomic(next.remaining);
+        FATAL_CHECK(atomic)
         if (atomic.valid)
         {
             expr *bool_neg = get_expr(Bool_Neg, 0, atomic.expression, NULL);
@@ -187,6 +230,7 @@ static parse_result_expr parse_atomic(char *str)
             return atomic;
         }
     }
+    LINE_COUNTER = next.line_counter_before;
 
     parse_result_expr integer = parse_integer(str);
     if (integer.valid)
@@ -200,15 +244,16 @@ static parse_result_expr parse_atomic(char *str)
     if (parens.valid)
         return parens;
 
-    return INVALID_PARSE_RESULT_EXPR;
+    REVERT
 }
 
 static parse_result_expr parse_integer(char *str)
 {
-    str = remove_spaces(str);
+    PARSE_INIT
 
-    if (!is_digit(*str))
-        return INVALID_PARSE_RESULT_EXPR;
+    LINE_COUNTER += remove_spaces(&str);
+
+    if (!is_digit(*str)) REVERT
 
     char *str_start = str;
 
@@ -231,11 +276,12 @@ static parse_result_expr parse_integer(char *str)
 }
 
 parse_result_expr parse_variable(char *str)
-{
-    str = remove_spaces(str);
+{   
+    PARSE_INIT
 
-    if (!is_var_letter(*str))
-        return INVALID_PARSE_RESULT_EXPR;
+    LINE_COUNTER += remove_spaces(&str);
+
+    if (!is_var_letter(*str)) REVERT
 
     // Limit length of variable to 50 characters
     char buffer[MAX_VARIABLE_LENGTH + 1];
@@ -246,7 +292,7 @@ parse_result_expr parse_variable(char *str)
     {
         if (index >= MAX_VARIABLE_LENGTH)
         {
-            return INVALID_PARSE_RESULT_EXPR; // Variable too long
+            FATAL_REVERT("Variable name is too long. Please choose a shorter name.")
         }
 
         buffer[index] = name_start[index];
@@ -255,26 +301,27 @@ parse_result_expr parse_variable(char *str)
     }
     buffer[index] = 0;
 
+    if(is_reserved_keyword(buffer)){
+        FATAL_REVERT("Variable name is a reserved keyword, please use a different name.")
+    }
+
     expr *var_expr = get_var_expr(buffer);
     return PARSE_RESULT_EXPR(var_expr, str);
 }
 
 static parse_result_expr parse_parens(char *str)
 {
+    PARSE_INIT
+
     char *parens_open = char_follows(str, '(', FALSE);
-    if (parens_open == NULL)
-        return INVALID_PARSE_RESULT_EXPR;
+    if (parens_open == NULL) REVERT
 
     parse_result_expr expr = parse_expr(parens_open);
-    if (!expr.valid)
-        return INVALID_PARSE_RESULT_EXPR;
+    FATAL_CHECK(expr)
+    if (!expr.valid) FATAL_REVERT("Invalid expression after opening brackets.")
 
     char *parens_close = char_follows(expr.remaining, ')', FALSE);
-    if (parens_close == NULL)
-    {
-        free_expr(expr.expression);
-        return INVALID_PARSE_RESULT_EXPR;
-    }
+    FATAL_CHECK_NULL_WITH_FREE_EXPR(parens_close, CLOSING_BRACKET_ERROR, expr.expression)
 
     return PARSE_RESULT_EXPR(expr.expression, parens_close);
 }

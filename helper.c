@@ -15,38 +15,20 @@ BOOL is_var_letter(char c){
     return FALSE;
 }
 
-// If char doesn't follow, then return NULL, else return pointer after char
-char* char_follows(char* str, char c, BOOL must_space_follow){
-    str = remove_spaces(str);
-    if(*str != c) return NULL;
-    if(must_space_follow && (str[1] != ' ' && str[1] != '\n' && str[1] != 0)) return NULL;
-
-    return str+1;
-}
-
-// If word doesn't follow return NULL, else it returns point where it stopped
-char* word_follows(char* str, char* word, BOOL must_space_follow){
-    str = remove_spaces(str);
-
-    int i = 0;
-    while(word[i] != 0){
-        if(str[i] != word[i]) return NULL;
-        i++;
-    }
-    if(must_space_follow && (str[i] != ' ' && str[i] != '\n' && str[i] != 0)) return NULL;
-    
-    return str+i;
-}
-
 int char_to_digit(char c){
     if(!is_digit(c)) return 0;
 
     return c-'0';
 }
 
-char* remove_spaces(char* str){
-    while(*str == ' ' || *str == '\n') str++;
-    return str;
+// removes spaces from string and returns amount of new lines skipped
+int remove_spaces(char** str){
+    int new_line_counter = 0;
+    while(**str == ' ' || **str == '\n'){
+        if(**str == '\n') new_line_counter++;
+        (*str)++;
+    }
+    return new_line_counter;
 }
 
 // Creates a copy of a string by dynamically allocating space

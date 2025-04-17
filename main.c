@@ -9,6 +9,7 @@
 size_t MAX_VARIABLE_LENGTH = 50;
 
 extern char EXEC_ERROR_MESSAGE[];
+extern char PARSE_ERROR_MESSAGE[];
 
 // <expression> ::= <add-expr> (('==' | '<' | '<=') <add-expr>)*
 // <add-expr> ::= <mul-expr> (('+' | '-') <mul-expr>)*
@@ -25,10 +26,13 @@ extern char EXEC_ERROR_MESSAGE[];
 
 int execute_program(char* str){
     parse_result_stmt program = parse_program(str);
-    if(!program.valid) return 1;
+    if(!program.valid){
+        printf("%s\n", PARSE_ERROR_MESSAGE);
+        return 1;
+    }
 
-    char* remaining = remove_spaces(program.remaining);
-    if(*remaining != 0){
+    remove_spaces(&program.remaining);
+    if(*program.remaining != 0){
         free_stmt(program.statement);
         return 1;
     }
@@ -65,4 +69,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TODO: error messages for parsing
+//TODO: save lines in statements and expressions, show line in runtime errors, a lot of testing...

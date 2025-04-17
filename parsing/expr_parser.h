@@ -7,6 +7,7 @@ typedef struct parse_result_expr_t{
     BOOL valid;
     expr* expression;
     char* remaining;
+    BOOL fatal;         //If this is true mistake in code was found, abort everything and give error
 } parse_result_expr;
 
 parse_result_expr parse_expr(char* str);
