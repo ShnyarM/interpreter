@@ -69,5 +69,5 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TODO: save lines in statements and expressions, show line in runtime errors, a lot of testing...
+//TODO: a lot of testing...
 // make execution use iteration for statements instead of recursion, clean up program parsing

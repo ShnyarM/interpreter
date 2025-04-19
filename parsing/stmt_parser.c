@@ -27,6 +27,7 @@ extern char CLOSING_BRACKET_ERROR[];
 extern char OPENING_CURLY_BRACKET_ERROR[];
 extern char CLOSING_CURLY_BRACKET_ERROR[];
 
+stmt* get_plain_statement(s_type type);
 static parse_result_stmt parse_assignment(char* str);
 static parse_result_stmt parse_if(char* str);
 static parse_result_stmt parse_while(char* str);
@@ -47,20 +48,15 @@ void free_stmt(stmt* s){
 }
 
 stmt* get_ass_statement(char* variable, expr* expr, stmt* next_statement){
-    stmt* statement = (stmt*)malloc(sizeof(stmt));
-    statement->type = Ass;
+    stmt* statement = get_plain_statement(Ass);
     statement->variable = copy_of_string(variable);
     statement->expression = expr;
     statement->next_statement = next_statement;
-    statement->inner_stmt_1 = NULL;
-    statement->inner_stmt_2 = NULL;
     return statement;
 }
 
 stmt* get_if_statement(expr* condition, stmt* true_branch, stmt* false_branch, stmt* next_statement){
-    stmt* statement = (stmt*)malloc(sizeof(stmt));
-    statement->type = If;
-    statement->variable = NULL;
+    stmt* statement = get_plain_statement(If);
     statement->expression = condition;
     statement->next_statement = next_statement;
     statement->inner_stmt_1 = true_branch;
@@ -69,24 +65,17 @@ stmt* get_if_statement(expr* condition, stmt* true_branch, stmt* false_branch, s
 }
 
 stmt* get_while_statement(expr* condition, stmt* true_branch, stmt* next_statement){
-    stmt* statement = (stmt*)malloc(sizeof(stmt));
-    statement->type = While;
-    statement->variable = NULL;
+    stmt* statement = get_plain_statement(While);
     statement->expression = condition;
     statement->next_statement = next_statement;
     statement->inner_stmt_1 = true_branch;
-    statement->inner_stmt_2 = NULL;
     return statement;
 }
 
 stmt* get_print_statement(expr* expression, stmt* next_statement){
-    stmt* statement = (stmt*)malloc(sizeof(stmt));
-    statement->type = Print;
-    statement->variable = NULL;
+    stmt* statement = get_plain_statement(Print);
     statement->expression = expression;
     statement->next_statement = next_statement;
-    statement->inner_stmt_1 = NULL;
-    statement->inner_stmt_2 = NULL;
     return statement;
 }
 
@@ -98,6 +87,7 @@ stmt* get_plain_statement(s_type type){
     statement->next_statement = NULL;
     statement->inner_stmt_1 = NULL;
     statement->inner_stmt_2 = NULL;
+    statement->line = LINE_COUNTER;
     return statement;
 }
 

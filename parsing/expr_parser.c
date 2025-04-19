@@ -54,17 +54,14 @@ static expr *get_expr(e_type type, int val, expr *ex_1, expr *ex_2)
     expression->variable = NULL;
     expression->expr_1 = ex_1;
     expression->expr_2 = ex_2;
+    expression->line = LINE_COUNTER;
     return expression;
 }
 
 static expr *get_var_expr(char *name)
 {
-    expr *expression = (expr *)malloc(sizeof(expr));
-    expression->type = Var;
-    expression->val = 0;
+    expr *expression = get_expr(Var, 0, NULL, NULL);
     expression->variable = copy_of_string(name); // makes its own copy
-    expression->expr_1 = NULL;
-    expression->expr_2 = NULL;
     return expression;
 }
 

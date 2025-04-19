@@ -13,6 +13,7 @@ typedef struct expression_t{
     char* variable;                   // Name if it is variable
     struct expression_t *expr_1;
     struct expression_t *expr_2;
+    size_t line;                      // line at which this expression appears
 } expr;
 
 typedef enum statement_type {Ass, Print, If, While, Brk, Stop} s_type;
@@ -22,7 +23,8 @@ typedef struct statement_t{
     char* variable;
     expr* expression;
     struct statement_t* next_statement;
+    size_t line;                      // line at which this expression appears
 
     struct statement_t* inner_stmt_1; //Used for if true branch and for while
-    struct statement_t* inner_stmt_2; //used for if false branch (else path)
+    struct statement_t* inner_stmt_2; //used for if false branch (else path)$
 } stmt;

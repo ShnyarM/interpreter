@@ -8,6 +8,18 @@
 
 char EXEC_ERROR_MESSAGE[EXEC_ERROR_MESSAGE_LENGTH];
 
+void write_exec_error(char* message, size_t line){
+    if(*message == 0) return;
+
+    char int_buffer[20];
+
+    strncpy(EXEC_ERROR_MESSAGE, "Runtime error on line ", EXEC_ERROR_MESSAGE_LENGTH);
+    sprintf(int_buffer, "%ld", line);
+    strcat(EXEC_ERROR_MESSAGE, int_buffer);
+    strcat(EXEC_ERROR_MESSAGE, ": ");
+    strcat(EXEC_ERROR_MESSAGE, message);
+}
+
 static expr_eval_result eval_expr(expr* expression, dictionary* dict){
     expr_eval_result res = {TRUE, 0};
     if(expression == NULL) return res;
@@ -38,7 +50,7 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
 
     if(expression->type == Div){
         if(value2.value == 0){
-            strncpy(EXEC_ERROR_MESSAGE, "Divide by zero error.", EXEC_ERROR_MESSAGE_LENGTH);
+            write_exec_error("Divide by zero error.", expression->line);
             res.succesful = FALSE;
             return res;
         }
@@ -53,9 +65,11 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
         dict_result var_value = dict_get(dict, expression->variable);
         if(var_value.valid) res.value = var_value.result;
         else{
-            strncpy(EXEC_ERROR_MESSAGE, "Variable '", EXEC_ERROR_MESSAGE_LENGTH);
-            strcat(EXEC_ERROR_MESSAGE, expression->variable);
-            strcat(EXEC_ERROR_MESSAGE, "' is not initialized.");
+            char buffer[EXEC_ERROR_MESSAGE_LENGTH];
+            strncpy(buffer, "Variable '", EXEC_ERROR_MESSAGE_LENGTH);
+            strcat(buffer, expression->variable);
+            strcat(buffer, "' is not initialized.");
+            write_exec_error(buffer, expression->line);
             res.succesful = FALSE;
             return res;
         }
