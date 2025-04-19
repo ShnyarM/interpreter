@@ -39,7 +39,7 @@ int execute_program(char* str){
 
     dictionary dict = dict_new();
 
-    execution_result exec = run_statement(program.statement, &dict);
+    execution_result exec = run_program(program.statement, &dict);
 
     dict_free(&dict);
     free_stmt(program.statement);
@@ -70,4 +70,4 @@ int main(int argc, char** argv){
 }
 
 //TODO: a lot of testing...
-// make execution use iteration for statements instead of recursion, clean up program parsing
+// clean up program parsing

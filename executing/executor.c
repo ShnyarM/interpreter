@@ -20,6 +20,10 @@ void write_exec_error(char* message, size_t line){
     strcat(EXEC_ERROR_MESSAGE, message);
 }
 
+BOOL stop_next_execution(execution_result e){
+    return (!e.succesful || e.stop_execution || e.break_while);
+}
+
 static expr_eval_result eval_expr(expr* expression, dictionary* dict){
     expr_eval_result res = {TRUE, 0};
     if(expression == NULL) return res;
@@ -94,7 +98,78 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
     return res;
 }
 
-execution_result run_statement(stmt* statement, dictionary* dict){
+execution_result run_single_statement(stmt* statement, dictionary* dict){
+    execution_result exec = {TRUE, FALSE, FALSE};
+    if(statement == NULL) return exec;
+
+    expr_eval_result inner_expression = eval_expr(statement->expression, dict);
+    if(!inner_expression.succesful){
+        exec.succesful = FALSE;
+        return exec;
+    }
+
+    if(statement->type == Ass){
+        dict_add(dict, statement->variable, inner_expression.value);
+    }
+
+    if(statement->type == Print){
+        printf("%d\n", inner_expression.value);
+    }
+
+    if(statement->type == If){
+        if(inner_expression.value){
+            exec = run_program(statement->inner_stmt_1, dict);
+        }else{
+            exec = run_program(statement->inner_stmt_2, dict);
+        }
+    }
+
+    if(statement->type == While){
+        while(inner_expression.value){
+            exec = run_program(statement->inner_stmt_1, dict);
+            if(stop_next_execution(exec)){
+                exec.break_while = FALSE;
+                break;
+            }
+            inner_expression = eval_expr(statement->expression, dict); //Recalc expression
+            if(!inner_expression.succesful){
+                exec.succesful = FALSE;
+                return exec;
+            }
+        }
+    }
+
+    if(statement->type == Brk){
+        //Do not run next statement
+        exec.break_while = TRUE;
+        return exec;
+    }
+
+    if(statement->type == Stop){
+        //Do not run next statement and stop execution
+        exec.stop_execution = TRUE;
+    }
+
+    if(stop_next_execution(exec)) return exec;
+    return exec;
+}
+
+execution_result run_program(stmt* start_statement, dictionary* dict){
+    execution_result exec = {TRUE, FALSE, FALSE};
+    if(start_statement == NULL) return exec;
+    
+    stmt* current_stmt = start_statement;
+    while(current_stmt != NULL){
+        exec = run_single_statement(current_stmt, dict);
+        if(stop_next_execution(exec)) return exec;
+
+        current_stmt = current_stmt->next_statement;
+    }
+
+    return exec;
+}
+
+/*execution_result run_statement(stmt* statement, dictionary* dict){
     execution_result exec = {TRUE, FALSE, FALSE};
     if(statement == NULL) return exec;
 
@@ -127,6 +202,7 @@ execution_result run_statement(stmt* statement, dictionary* dict){
                 exec.break_while = FALSE;
                 break;
             }
+            inner_expression.value = eval_expr(statement->expression, dict).value; //Recalc expression
         }
     }
 
@@ -143,4 +219,4 @@ execution_result run_statement(stmt* statement, dictionary* dict){
 
     if(!exec.succesful || exec.stop_execution || exec.break_while) return exec;
     return run_statement(statement->next_statement, dict);   
-}
+}*/

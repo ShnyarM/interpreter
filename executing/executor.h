@@ -15,4 +15,5 @@ typedef struct expr_eval_result_t{
     int value;
 } expr_eval_result;
 
-execution_result run_statement(stmt* statement, dictionary* dict);
+//execution_result run_statement(stmt* statement, dictionary* dict);
+execution_result run_program(stmt* start_statement, dictionary* dict);
