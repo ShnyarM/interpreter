@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 
+subprocess.run("make")
 test_cases_amn = int(len(os.listdir("testing/files")) / 2)
 
 for i in range(test_cases_amn):
