@@ -1,0 +1,5 @@
+{
+    "output": "Error during parsing on line 9: Semicolon missing.",
+    "return_code": "1",
+    "description": "Missing semicolon on specific line"
+}

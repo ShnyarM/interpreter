@@ -1,0 +1,21 @@
+if(1){
+    print(5);
+}else{
+    print(6);
+};
+
+if(0){
+    print(7);
+}else{
+    print(8);
+};
+
+if(5 == 2+3){
+    print(11);
+};
+
+if(5 < 4){
+    print(18);
+};
+
+print(23);

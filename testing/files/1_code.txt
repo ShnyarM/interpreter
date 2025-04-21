@@ -1,0 +1,9 @@
+x=5+7;
+print(x-6);
+
+n=x*6;
+print(n+x);
+
+i=1;
+i=i+1;
+print(i);

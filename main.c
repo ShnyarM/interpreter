@@ -69,5 +69,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TODO: a lot of testing...
-// clean up program parsing
+//TODO: block statements
