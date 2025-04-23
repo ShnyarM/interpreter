@@ -20,6 +20,15 @@ void write_exec_error(char* message, size_t line){
     strcat(EXEC_ERROR_MESSAGE, message);
 }
 
+void write_var_not_init_error(char* variable_name, size_t line){
+    char buffer[EXEC_ERROR_MESSAGE_LENGTH];
+
+    strncpy(buffer, "Variable '", EXEC_ERROR_MESSAGE_LENGTH);
+    strcat(buffer, variable_name);
+    strcat(buffer, "' is not initialized.");
+    write_exec_error(buffer, line);
+}
+
 BOOL stop_next_execution(execution_result e){
     return (!e.succesful || e.stop_execution || e.break_while);
 }
@@ -69,11 +78,7 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
         dict_result var_value = dict_get(dict, expression->variable);
         if(var_value.valid) res.value = var_value.result;
         else{
-            char buffer[EXEC_ERROR_MESSAGE_LENGTH];
-            strncpy(buffer, "Variable '", EXEC_ERROR_MESSAGE_LENGTH);
-            strcat(buffer, expression->variable);
-            strcat(buffer, "' is not initialized.");
-            write_exec_error(buffer, expression->line);
+            write_var_not_init_error(expression->variable, expression->line);
             res.succesful = FALSE;
             return res;
         }
@@ -109,7 +114,23 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == Ass){
-        dict_add(dict, statement->variable, inner_expression.value);
+        BOOL result = dict_update(dict, statement->variable, inner_expression.value);
+        // result == FALSE, then variable has not been initialized
+        if(!result){
+            write_var_not_init_error(statement->variable, statement->line);
+            exec.succesful = FALSE;
+            return exec;
+        }
+    }
+
+    if(statement->type == Var_Init){
+        BOOL result = dict_add(dict, statement->variable, inner_expression.value);
+        // result == FALSE, then variable has already been initialized
+        if(!result){
+            write_exec_error("Variable has already been initialized.", statement->line);
+            exec.succesful = FALSE;
+            return exec;
+        }
     }
 
     if(statement->type == Print){
@@ -140,7 +161,9 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == Block){
-        exec = run_program(statement->inner_stmt_1, dict);
+        dictionary block_dict = dict_get_extension(dict);
+        exec = run_program(statement->inner_stmt_1, &block_dict);
+        dict_free(&block_dict);
     }
 
     if(statement->type == Brk){
@@ -172,55 +195,3 @@ execution_result run_program(stmt* start_statement, dictionary* dict){
 
     return exec;
 }
-
-/*execution_result run_statement(stmt* statement, dictionary* dict){
-    execution_result exec = {TRUE, FALSE, FALSE};
-    if(statement == NULL) return exec;
-
-    expr_eval_result inner_expression = eval_expr(statement->expression, dict);
-    if(!inner_expression.succesful){
-        exec.succesful = FALSE;
-        return exec;
-    }
-
-    if(statement->type == Ass){
-        dict_add(dict, statement->variable, inner_expression.value);
-    }
-
-    if(statement->type == Print){
-        printf("%d\n", inner_expression.value);
-    }
-
-    if(statement->type == If){
-        if(inner_expression.value){
-            exec = run_statement(statement->inner_stmt_1, dict);
-        }else{
-            exec = run_statement(statement->inner_stmt_2, dict);
-        }
-    }
-
-    if(statement->type == While){
-        while(inner_expression.value){
-            exec = run_statement(statement->inner_stmt_1, dict);
-            if(!exec.succesful || exec.stop_execution || exec.break_while){
-                exec.break_while = FALSE;
-                break;
-            }
-            inner_expression.value = eval_expr(statement->expression, dict).value; //Recalc expression
-        }
-    }
-
-    if(statement->type == Brk){
-        //Do not run next statement
-        exec.break_while = TRUE;
-        return exec;
-    }
-
-    if(statement->type == Stop){
-        //Do not run next statement and stop execution
-        exec.stop_execution = TRUE;
-    }
-
-    if(!exec.succesful || exec.stop_execution || exec.break_while) return exec;
-    return run_statement(statement->next_statement, dict);   
-}*/

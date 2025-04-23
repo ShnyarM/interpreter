@@ -11,6 +11,7 @@ typedef struct dictionary_t{
     dict_entry* list;
     int length;           //How many entries are in list
     int capacity;         //How how capacity does list have
+    struct dictionary_t* child;     // child dictionary if dictionary is extender
 } dictionary;
 
 typedef struct dict_result_r{
@@ -19,7 +20,8 @@ typedef struct dict_result_r{
 } dict_result;
 
 dictionary dict_new();
+dictionary dict_get_extension(dictionary* child);
 BOOL dict_update(dictionary* dict, char* name, int value);
-void dict_add(dictionary* dict, char* name, int value);
+BOOL dict_add(dictionary* dict, char* name, int value);
 dict_result dict_get(dictionary* dict, char* name);
 void dict_free(dictionary* dict);

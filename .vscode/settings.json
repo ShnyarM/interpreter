@@ -7,6 +7,14 @@
         "helper.h": "c",
         "types.h": "c",
         "expr_parser.h": "c",
-        "dictionary.h": "c"
+        "dictionary.h": "c",
+        "optional": "c",
+        "ratio": "c",
+        "system_error": "c",
+        "array": "c",
+        "functional": "c",
+        "tuple": "c",
+        "type_traits": "c",
+        "utility": "c"
     }
 }

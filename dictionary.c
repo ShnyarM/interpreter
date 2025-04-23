@@ -15,6 +15,13 @@ dictionary dict_new(){
     dict.list = list;
     dict.length = 0;
     dict.capacity = INIT_SIZE;
+    dict.child = NULL;
+    return dict;
+}
+
+dictionary dict_get_extension(dictionary* child){
+    dictionary dict = dict_new();
+    dict.child = child;
     return dict;
 }
 
@@ -23,39 +30,59 @@ static BOOL dict_valid(dictionary* dict){
     return TRUE;
 }
 
+// returns entry with corresponding name, return NULL if not found
+static dict_entry* dict_get_entry(dictionary* dict, char* name){
+    for(int i = 0; i < dict->length; i++){
+        dict_entry* entry = dict->list+i;
+        if(strcmp(name, entry->name) == 0){
+            return entry;
+        }
+    }
+
+    return NULL;
+}
+
 // Return TRUE if it was able to update it
 BOOL dict_update(dictionary* dict, char* name, int value){
     if(!dict_valid(dict)) return FALSE;
 
-    for(int i = 0; i < dict->length; i++){
-        dict_entry* entry = dict->list+i;
-        if(strcmp(name, entry->name) == 0){
-            entry->value = value;
-            return TRUE;
-        }
+    dict_entry* entry = dict_get_entry(dict, name);
+    if(entry != NULL){
+        entry->value = value;
+        return TRUE;
+    }
+
+    //search in child dictionary
+    if(dict->child != NULL){
+        BOOL result = dict_update(dict->child, name, value);
+        return result;
     }
 
     return FALSE;
 }
 
-void dict_add(dictionary* dict, char* name, int value){ 
+// adds to list if not present, returns TRUE if successful and returns FALSE if already present
+// does not check in child dictionary
+BOOL dict_add(dictionary* dict, char* name, int value){ 
 
     //Create new dictionary if invalid
     if(!dict_valid(dict)){
         *dict = dict_new();
     }
 
+    // If name already in list, return FALSE
+    if(dict_get_entry(dict, name) != NULL) return FALSE;
+
     if(dict->length == dict->capacity){
         dict_increase_capacity(dict);
     }
-
-    // If name already in list, just update
-    if(dict_update(dict, name, value)) return;
 
     dict_entry* entry = dict->list+(dict->length);
     entry->name = copy_of_string(name);
     entry->value = value;
     dict->length++;
+
+    return TRUE;
 }
 
 dict_result dict_get(dictionary* dict, char* name){
@@ -63,14 +90,15 @@ dict_result dict_get(dictionary* dict, char* name){
         return (dict_result){FALSE, 0};
     }
 
-    for(int i = 0; i < dict->length; i++){
-        dict_entry entry = dict->list[i];
+    dict_entry* entry = dict_get_entry(dict, name);
+    if(entry != NULL) return (dict_result){TRUE, entry->value};
 
-        if(strcmp(name, entry.name) == 0){
-            return (dict_result){TRUE, entry.value};
-        }
+    //check in child dictionary
+    if(dict->child != NULL){
+        dict_result child_result = dict_get(dict->child, name);
+        if(child_result.valid) return child_result;
     }
-
+    
     return (dict_result){FALSE, 0};
 }
 

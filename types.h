@@ -16,7 +16,7 @@ typedef struct expression_t{
     size_t line;                      // line at which this expression appears
 } expr;
 
-typedef enum statement_type {Ass, Print, If, While, Block, Brk, Stop} s_type;
+typedef enum statement_type {Ass, Var_Init, Print, If, While, Block, Brk, Stop} s_type;
 
 typedef struct statement_t{
     s_type type;

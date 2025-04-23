@@ -129,6 +129,20 @@ static parse_result_stmt parse_assignment(char* str){
     return PARSE_RESULT_STMT(statement, last);
 }
 
+static parse_result_stmt parse_initialization(char* str){
+    PARSE_INIT
+
+    char* int_keyword = word_follows(str, "int", TRUE);
+    if(int_keyword == NULL) REVERT
+
+    parse_result_stmt assignment = parse_assignment(int_keyword);
+    FATAL_CHECK(assignment)
+    if(!assignment.valid) FATAL_REVERT("Expected variable assignment after initialization keyword.")
+
+    assignment.statement->type = Var_Init;
+    return assignment;
+}
+
 static parse_result_stmt parse_else(char* str){
     PARSE_INIT
 
@@ -282,6 +296,10 @@ static parse_result_stmt parse_statement(char* str){
         FATAL_CHECK_NULL(last, SEMICOLON_ERROR)
         return PARSE_RESULT_STMT(get_plain_statement(Stop), last);
     }
+
+    parse_result_stmt init = parse_initialization(str);
+    FATAL_CHECK(init)
+    if(init.valid) return init;
 
     parse_result_stmt assignment = parse_assignment(str);
     FATAL_CHECK(assignment)

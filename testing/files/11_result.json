@@ -1,0 +1,5 @@
+{
+    "output": "5\n6\n8\n9\n10\n8\n6\n0\n5\n100\nThere was an error while running the script. Error:\nRuntime error on line 28: Variable 'y' is not initialized.",
+    "return_code": "1",
+    "description": "Variable scopes in block statements."
+}

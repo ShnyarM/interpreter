@@ -20,6 +20,7 @@ extern char PARSE_ERROR_MESSAGE[];
 // <program> ::= <multiple_statements>
 // <multiple_statements> ::= <statement> (<statement>)*
 // <statement> ::== <assignment> | <if> | <while> | <print> | <block> | 'break;' | 'stop;'
+// <initialization> ::== 'int' <assignment>
 // <assignment> ::== <variable> '=' <expression>';'
 // <if> ::== 'if (' <expression> ')' <statement> ['else' <statement>]
 // <while> ::== 'while (' <expression> ')' <statement>
@@ -65,4 +66,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TODO: inti variables
+//TODO: init variables
