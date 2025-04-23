@@ -14,7 +14,9 @@ for i in range(test_cases_amn):
         json_string = file.read()
         desired = json.loads(json_string)
 
-    assert str(return_code) == desired["return_code"], f"Test Case {i} failed. Return code should be {desired["return_code"]}, but is {return_code}."
-    assert desired["output"] in output, f"Test Case {i} failed. Desired output not in output. Desired:\n{desired["output"]}\n Output:\n{output}"
+    print(f"Testing {i}: {desired["description"]}")
+
+    assert str(return_code) == desired["return_code"], f"Test Case {i} failed. Return code should be {desired["return_code"]}, but is {return_code}.\nOutput:\n{output}"
+    assert desired["output"] in output, f"Test Case {i} failed. Desired output not in output.\nDesired:\n{desired["output"]}\nOutput:\n{output}"
 
 print(f"Tests passed! {test_cases_amn} total test cases.")

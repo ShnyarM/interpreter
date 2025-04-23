@@ -139,6 +139,10 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
         }
     }
 
+    if(statement->type == Block){
+        exec = run_program(statement->inner_stmt_1, dict);
+    }
+
     if(statement->type == Brk){
         //Do not run next statement
         exec.break_while = TRUE;

@@ -15,6 +15,7 @@ char OPENING_BRACKET_ERROR[] = "Expected opening bracket '('.";
 char CLOSING_BRACKET_ERROR[] = "Expected closing bracket ')'.";
 char OPENING_CURLY_BRACKET_ERROR[] = "Expected opening curly bracket '{'.";
 char CLOSING_CURLY_BRACKET_ERROR[] = "Expected closing curly bracket '}'.";
+char SEMICOLON_ERROR[] = "Semicolon missing.";
 
 #define RESERVED_KEYWORDS_LENGTH 6
 char RESERVED_KEYWORDS[RESERVED_KEYWORDS_LENGTH][10] = {"if", "else", "while", "print", "break", "stop"};

@@ -17,23 +17,19 @@ extern char PARSE_ERROR_MESSAGE[];
 // <atomic> ::= ['-' | '!'](<literal> | <variable> | <parens>)
 // <parens> ::= '(' <expression> ')'
 
-// <program> ::= <statement>';' (<statement>';')*
-// <statement> ::== <assignment> | <if> | <while> | <print> | 'break' | 'stop'
-// <assignment> ::== <variable> '=' <expression>
-// <if> ::== 'if (' <expression> ')' '{' <program> '}' ['else {' <program> '}']
-// <while> ::== 'while (' <expression> ')' '{' <program> '}'
-// <print> ::== 'print(' <expression> ')'
+// <program> ::= <multiple_statements>
+// <multiple_statements> ::= <statement> (<statement>)*
+// <statement> ::== <assignment> | <if> | <while> | <print> | <block> | 'break;' | 'stop;'
+// <assignment> ::== <variable> '=' <expression>';'
+// <if> ::== 'if (' <expression> ')' <statement> ['else' <statement>]
+// <while> ::== 'while (' <expression> ')' <statement>
+// <print> ::== 'print(' <expression> ')'';'
+// <block> ::=  '{' <multiple_statements> '}'
 
 int execute_program(char* str){
     parse_result_stmt program = parse_program(str);
     if(!program.valid){
         printf("%s\n", PARSE_ERROR_MESSAGE);
-        return 1;
-    }
-
-    remove_spaces(&program.remaining);
-    if(*program.remaining != 0){
-        free_stmt(program.statement);
         return 1;
     }
 
@@ -69,4 +65,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TODO: block statements
+//TODO: block statements, valgrind in testing

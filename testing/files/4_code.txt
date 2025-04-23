@@ -3,7 +3,7 @@ print(67);
 if(1==1){
     while(1){
         stop;
-    };
-};
+    }
+}
 
 print(14);

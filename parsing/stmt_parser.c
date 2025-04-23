@@ -26,6 +26,7 @@ extern char OPENING_BRACKET_ERROR[];
 extern char CLOSING_BRACKET_ERROR[];
 extern char OPENING_CURLY_BRACKET_ERROR[];
 extern char CLOSING_CURLY_BRACKET_ERROR[];
+extern char SEMICOLON_ERROR[];
 
 stmt* get_plain_statement(s_type type);
 static parse_result_stmt parse_assignment(char* str);
@@ -33,6 +34,7 @@ static parse_result_stmt parse_if(char* str);
 static parse_result_stmt parse_while(char* str);
 static parse_result_stmt parse_print(char* str);
 static parse_result_stmt parse_statement(char* str);
+static parse_result_stmt parse_multiple_statements(char* str);
 
 void free_stmt(stmt* s){
     if(s == NULL) return;
@@ -79,6 +81,13 @@ stmt* get_print_statement(expr* expression, stmt* next_statement){
     return statement;
 }
 
+stmt* get_block_statement(stmt* inside, stmt* next_statement){
+    stmt* statement = get_plain_statement(Block);
+    statement->inner_stmt_1 = inside;
+    statement->next_statement = next_statement;
+    return statement;
+}
+
 stmt* get_plain_statement(s_type type){
     stmt* statement = (stmt*)malloc(sizeof(stmt));
     statement->type = type;
@@ -98,12 +107,6 @@ static parse_result_stmt parse_assignment(char* str){
     FATAL_CHECK(variable)
     if(!variable.valid) REVERT
 
-    /*token_result next = get_next_char(variable.remaining);
-    if(next.token != '='){
-        free_expr(variable.expression);
-        return INVALID_PARSE_RESULT_STMT;
-    }*/
-
     char* equals = char_follows(variable.remaining, '=', FALSE);
     FATAL_CHECK_NULL_WITH_FREE_EXPR(equals, "Expected equality operator '=' after variable name.", variable.expression)
 
@@ -114,9 +117,16 @@ static parse_result_stmt parse_assignment(char* str){
         FATAL_REVERT("Invalid expression for variable assignment.")
     }
 
+    char* last = char_follows(expression.remaining, ';', FALSE);
+    if(last == NULL){
+        free_expr(variable.expression);
+        free_expr(expression.expression);
+        FATAL_REVERT(SEMICOLON_ERROR)
+    }
+
     stmt* statement = get_ass_statement(variable.expression->variable, expression.expression, NULL);
     free_expr(variable.expression); //Free expression as we dont need it, only needed variable name
-    return PARSE_RESULT_STMT(statement, expression.remaining);
+    return PARSE_RESULT_STMT(statement, last);
 }
 
 static parse_result_stmt parse_else(char* str){
@@ -126,18 +136,11 @@ static parse_result_stmt parse_else(char* str){
     char* else_str = word_follows(str, "else", FALSE);
     if(else_str == NULL) REVERT
 
-    char* open_curly_bracket = char_follows(else_str, '{', FALSE);
-    FATAL_CHECK_NULL(open_curly_bracket, OPENING_CURLY_BRACKET_ERROR)
+    parse_result_stmt statement = parse_statement(else_str);
+    FATAL_CHECK(statement)
+    if(!statement.valid) FATAL_REVERT("Invalid statement inside else block.")
 
-    parse_result_stmt program_2 = parse_program(open_curly_bracket);
-    FATAL_CHECK(program_2)
-    if(!program_2.valid) FATAL_REVERT("Invalid statements inside else block.")
-
-    char* close_curly_bracket = char_follows(program_2.remaining, '}', FALSE);
-    FATAL_CHECK_NULL_WITH_FREE_STMT(close_curly_bracket, CLOSING_CURLY_BRACKET_ERROR, program_2.statement)
-
-    program_2.remaining = close_curly_bracket;
-    return program_2;
+    return statement;
 }
 
 static parse_result_stmt parse_if(char* str){
@@ -156,49 +159,21 @@ static parse_result_stmt parse_if(char* str){
     char* close_bracket = char_follows(expression_1.remaining, ')', FALSE);
     FATAL_CHECK_NULL_WITH_FREE_EXPR(close_bracket, CLOSING_BRACKET_ERROR, expression_1.expression)
 
-    char* open_curly_bracket = char_follows(close_bracket, '{', FALSE);
-    FATAL_CHECK_NULL_WITH_FREE_EXPR(open_curly_bracket, OPENING_CURLY_BRACKET_ERROR, expression_1.expression)
-
-    parse_result_stmt program_1 = parse_program(open_curly_bracket);
-    FATAL_CHECK_WITH_FREE_EXPR(program_1, expression_1.expression)
-    if(!program_1.valid){
+    parse_result_stmt statement = parse_statement(close_bracket);
+    FATAL_CHECK_WITH_FREE_EXPR(statement, expression_1.expression)
+    if(!statement.valid){
         free_expr(expression_1.expression);
-        FATAL_REVERT("Invalid statements inside if block.")
-    }
-
-    char* close_curly_bracket = char_follows(program_1.remaining, '}', FALSE);
-    if(close_curly_bracket == NULL){
-        free_expr(expression_1.expression);
-        free_stmt(program_1.statement);
-        FATAL_REVERT(CLOSING_CURLY_BRACKET_ERROR)
+        FATAL_REVERT("Invalid statement inside if block.")
     }
 
     // construct statement which will be returned if else fails
-    stmt* final_stmt = get_if_statement(expression_1.expression, program_1.statement, NULL, NULL);
-    parse_result_stmt final = PARSE_RESULT_STMT(final_stmt, close_curly_bracket);
+    stmt* final_stmt = get_if_statement(expression_1.expression, statement.statement, NULL, NULL);
+    parse_result_stmt final = PARSE_RESULT_STMT(final_stmt, statement.remaining);
 
     //try to get else statement
-    parse_result_stmt else_statement = parse_else(close_curly_bracket);
+    parse_result_stmt else_statement = parse_else(statement.remaining);
     FATAL_CHECK_WITH_FREE_STMT(else_statement, final_stmt)
     if(!else_statement.valid) return final;
-
-
-
-    // From here on else keyword, which is optional
-    /*char* else_str = word_follows(close_curly_bracket, "else", FALSE);
-    if(else_str == NULL) return final;
-
-    open_curly_bracket = char_follows(else_str, '{', FALSE);
-    if(open_curly_bracket == NULL) return final;
-
-    parse_result_stmt program_2 = parse_program(open_curly_bracket);
-    if(!program_2.valid) return final;
-
-    close_curly_bracket = char_follows(program_2.remaining, '}', FALSE);
-    if(close_curly_bracket == NULL){
-        free_stmt(program_2.statement);
-        return final;
-    }*/
 
     //else was succesful, add to previous if statement
     final_stmt->inner_stmt_2 = else_statement.statement;
@@ -223,26 +198,15 @@ static parse_result_stmt parse_while(char* str){
     char* close_bracket = char_follows(expression_1.remaining, ')', FALSE);
     FATAL_CHECK_NULL_WITH_FREE_EXPR(close_bracket, CLOSING_BRACKET_ERROR, expression_1.expression)
 
-    char* open_curly_bracket = char_follows(close_bracket, '{', FALSE);
-    FATAL_CHECK_NULL_WITH_FREE_EXPR(open_curly_bracket, OPENING_CURLY_BRACKET_ERROR, expression_1.expression)
-
-    parse_result_stmt program_1 = parse_program(open_curly_bracket);
-    FATAL_CHECK_WITH_FREE_EXPR(program_1, expression_1.expression)
-    if(!program_1.valid){
+    parse_result_stmt statement = parse_statement(close_bracket);
+    FATAL_CHECK_WITH_FREE_EXPR(statement, expression_1.expression)
+    if(!statement.valid){
         free_expr(expression_1.expression);
-        FATAL_REVERT("Invalid statements inside while block.")
+        FATAL_REVERT("Invalid statement inside while block.")
     }
 
-    char* close_curly_bracket = char_follows(program_1.remaining, '}', FALSE);
-    if(close_curly_bracket == NULL){
-        free_expr(expression_1.expression);
-        free_stmt(program_1.statement);
-        FATAL_REVERT("Expected closing curly bracket '}'")
-    }
-
-    // construct statement which will be returned if else fails
-    stmt* final_stmt = get_while_statement(expression_1.expression, program_1.statement, NULL);
-    parse_result_stmt final = PARSE_RESULT_STMT(final_stmt, close_curly_bracket);
+    stmt* final_stmt = get_while_statement(expression_1.expression, statement.statement, NULL);
+    parse_result_stmt final = PARSE_RESULT_STMT(final_stmt, statement.remaining);
 
     return final;
 }
@@ -260,8 +224,28 @@ static parse_result_stmt parse_print(char* str){
     char* next = char_follows(expression.remaining, ')', FALSE);
     FATAL_CHECK_NULL_WITH_FREE_EXPR(next, CLOSING_BRACKET_ERROR, expression.expression)
 
+    char* last = char_follows(next, ';', FALSE);
+    FATAL_CHECK_NULL_WITH_FREE_EXPR(last, SEMICOLON_ERROR, expression.expression)
+
     stmt* statement = get_print_statement(expression.expression, NULL);
-    return PARSE_RESULT_STMT(statement, next);
+    return PARSE_RESULT_STMT(statement, last);
+}
+
+static parse_result_stmt parse_block(char* str){
+    PARSE_INIT
+
+    char* curly_bracket_open = char_follows(str, '{', FALSE);
+    if(curly_bracket_open == NULL) REVERT
+
+    parse_result_stmt statements = parse_multiple_statements(curly_bracket_open);
+    FATAL_CHECK(statements)
+    if(!statements.valid) FATAL_REVERT("Invalid statements inside block.")
+
+    char* curly_bracket_close = char_follows(statements.remaining, '}', FALSE);
+    FATAL_CHECK_NULL_WITH_FREE_STMT(curly_bracket_close, CLOSING_CURLY_BRACKET_ERROR, statements.statement)
+
+    stmt* final_statement = get_block_statement(statements.statement, NULL);
+    return PARSE_RESULT_STMT(final_statement, curly_bracket_close);
 }
 
 static parse_result_stmt parse_statement(char* str){
@@ -279,11 +263,25 @@ static parse_result_stmt parse_statement(char* str){
     FATAL_CHECK(print)
     if(print.valid) return print;
 
-    char* break_statement = word_follows(str, "break", FALSE);
-    if(break_statement != NULL) return PARSE_RESULT_STMT(get_plain_statement(Brk), break_statement);
+    parse_result_stmt block = parse_block(str);
+    FATAL_CHECK(block)
+    if(block.valid) return block;
 
+    // Break statement
+    char* break_statement = word_follows(str, "break", FALSE);
+    if(break_statement != NULL){
+        char* last = char_follows(break_statement, ';', FALSE);
+        FATAL_CHECK_NULL(last, SEMICOLON_ERROR)
+        return PARSE_RESULT_STMT(get_plain_statement(Brk), last);
+    }
+
+    // Stop statement
     char* stop = word_follows(str, "stop", FALSE);
-    if(stop != NULL) return PARSE_RESULT_STMT(get_plain_statement(Stop), stop);
+    if(stop != NULL){
+        char* last = char_follows(stop, ';', FALSE);
+        FATAL_CHECK_NULL(last, SEMICOLON_ERROR)
+        return PARSE_RESULT_STMT(get_plain_statement(Stop), last);
+    }
 
     parse_result_stmt assignment = parse_assignment(str);
     FATAL_CHECK(assignment)
@@ -292,7 +290,7 @@ static parse_result_stmt parse_statement(char* str){
     REVERT //Can maybe remove
 }
 
-parse_result_stmt parse_program(char* str){
+static parse_result_stmt parse_multiple_statements(char* str){
     PARSE_INIT
 
     parse_result_stmt statement = parse_statement(str);
@@ -304,14 +302,8 @@ parse_result_stmt parse_program(char* str){
     
     while(TRUE){
         size_t counter_before = LINE_COUNTER;
-        char* next = char_follows(remaining, ';', FALSE);
-        
-        if(next == NULL){
-            LINE_COUNTER = counter_before;
-            break;
-        }
 
-        parse_result_stmt next_statement = parse_statement(next);
+        parse_result_stmt next_statement = parse_statement(remaining);
         FATAL_CHECK_WITH_FREE_STMT(next_statement, statement.statement)
         if(!next_statement.valid){
             LINE_COUNTER = counter_before;
@@ -325,10 +317,24 @@ parse_result_stmt parse_program(char* str){
         remaining = statement.remaining;
     }
 
-    char* last = char_follows(remaining, ';', FALSE);
-    FATAL_CHECK_NULL_WITH_FREE_STMT(last, "Semicolon missing.", statement.statement)
-
-    statement.remaining = last;
+    statement.remaining = remaining;
 
     return statement;
+}
+
+parse_result_stmt parse_program(char* str){
+    // No parse init here
+
+    parse_result_stmt statements = parse_multiple_statements(str);
+    FATAL_CHECK(statements)
+    if(!statements.valid) FATAL_REVERT("Invalid program.");
+
+    // check if nothing else at end
+    remove_spaces(&statements.remaining);
+    if(*statements.remaining != 0){
+        free_stmt(statements.statement);
+        FATAL_REVERT("Unknown symbol.")
+    }
+
+    return statements;
 }

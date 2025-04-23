@@ -2,20 +2,30 @@ if(1){
     print(5);
 }else{
     print(6);
-};
+}
 
 if(0){
     print(7);
 }else{
     print(8);
-};
+}
 
 if(5 == 2+3){
     print(11);
-};
+}
 
 if(5 < 4){
     print(18);
-};
+}
+
+if(1) print(55);
+else print(77);
+
+if(0) print(88);
+else print(99);
+
+if(1) print(101);
+
+if(0) print(106);
 
 print(23);

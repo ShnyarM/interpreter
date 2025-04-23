@@ -16,7 +16,7 @@ typedef struct expression_t{
     size_t line;                      // line at which this expression appears
 } expr;
 
-typedef enum statement_type {Ass, Print, If, While, Brk, Stop} s_type;
+typedef enum statement_type {Ass, Print, If, While, Block, Brk, Stop} s_type;
 
 typedef struct statement_t{
     s_type type;
@@ -25,6 +25,6 @@ typedef struct statement_t{
     struct statement_t* next_statement;
     size_t line;                      // line at which this expression appears
 
-    struct statement_t* inner_stmt_1; //Used for if true branch and for while
+    struct statement_t* inner_stmt_1; //Used for if true branch, while and block
     struct statement_t* inner_stmt_2; //used for if false branch (else path)$
 } stmt;
