@@ -64,6 +64,12 @@ int main(int argc, char** argv){
     free(file_contents);
 
     return result;
+
+    /*int i = 0;
+    while(i < 1000000000){
+        i=i+1;
+    }
+    printf("done");*/
 }
 
-//TODO: init variables
+//TODO: arrays...

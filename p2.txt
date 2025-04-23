@@ -1,28 +1,5 @@
-int x = 5;
-int z = 90;
-{
-    print(x);
-    int x = 6;
-    print(x);
-    int y = 8;
-    print(y);
-    {
-        int y = 9;
-        print(y);
-        int x= 10;
-        print(x);
-        z = 100;
-    }
-    print(y);
-    print(x);
-}
-
 int i = 0;
-if(1){
-    int i = 1;
+while(i < 10000000){
+    i=i+1;
 }
-print(i);
-
-print(x);
-print(z);
-print(y);
+print(1);
