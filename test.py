@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import sys
 
 subprocess.run("make")
 test_cases_amn = int(len(os.listdir("testing/files")) / 2)
@@ -20,3 +21,14 @@ for i in range(test_cases_amn):
     assert desired["output"] in output, f"Test Case {i} failed. Desired output not in output.\nDesired:\n{desired["output"]}\nOutput:\n{output}"
 
 print(f"Tests passed! {test_cases_amn} total test cases.")
+
+if "--memory" in sys.argv:
+    print("\nNow checking for memory leaks.")
+    for i in range(test_cases_amn):
+        process = subprocess.run(f"valgrind ./parse testing/files/{i}_code.txt", shell=True, capture_output=True, text=True)
+        output = process.stderr
+
+        print(f"Checking {i}")
+        assert "All heap blocks were freed -- no leaks are possible" in output, f"Memory leak in test case {i}."
+
+    print(f"No memory leaks! {test_cases_amn} total test cases.")

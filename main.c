@@ -65,4 +65,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TODO: block statements, valgrind in testing
+//TODO: inti variables
