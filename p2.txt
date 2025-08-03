@@ -1,5 +1,4 @@
-int i = 0;
-while(i < 10000000){
-    i=i+1;
-}
-print(1);
+int hello = 5*3;
+int[] arr;
+
+print(hello);

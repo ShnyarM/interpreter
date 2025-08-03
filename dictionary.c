@@ -43,7 +43,7 @@ static dict_entry* dict_get_entry(dictionary* dict, char* name){
 }
 
 // Return TRUE if it was able to update it
-BOOL dict_update(dictionary* dict, char* name, int value){
+BOOL dict_update(dictionary* dict, char* name, void* value){
     if(!dict_valid(dict)) return FALSE;
 
     dict_entry* entry = dict_get_entry(dict, name);
@@ -61,9 +61,9 @@ BOOL dict_update(dictionary* dict, char* name, int value){
     return FALSE;
 }
 
-// adds to list if not present, returns TRUE if successful and returns FALSE if already present
+// adds to list if not present, returns ptr to entry if successful and returns NULL if already present
 // does not check in child dictionary
-BOOL dict_add(dictionary* dict, char* name, int value){ 
+static dict_entry* dict_add_to_list(dictionary* dict, char* name, d_type type, void* value){ 
 
     //Create new dictionary if invalid
     if(!dict_valid(dict)){
@@ -71,7 +71,7 @@ BOOL dict_add(dictionary* dict, char* name, int value){
     }
 
     // If name already in list, return FALSE
-    if(dict_get_entry(dict, name) != NULL) return FALSE;
+    if(dict_get_entry(dict, name) != NULL) return NULL;
 
     if(dict->length == dict->capacity){
         dict_increase_capacity(dict);
@@ -80,10 +80,52 @@ BOOL dict_add(dictionary* dict, char* name, int value){
     dict_entry* entry = dict->list+(dict->length);
     entry->name = copy_of_string(name);
     entry->value = value;
+    entry->type = type;
+    entry->array = FALSE;
+    entry->array_size = 0;
+
     dict->length++;
+
+    return entry;
+}
+
+// adds to list if not present, returns TRUE if successful and returns FALSE if already present
+// does not check in child dictionary
+BOOL dict_add_array(dictionary* dict, char* name, d_type type, int size){ 
+
+    if(size <= 0) return FALSE;
+
+    void* ptr;
+    if(type == Int){
+        ptr = malloc(sizeof(int)*size);
+    }else{
+        return FALSE;
+    }
+
+    dict_entry* entry = dict_add_to_list(dict, name, type, ptr);
+    if(entry == NULL){
+        free(ptr);
+        return FALSE;
+    }
+
+    entry->array = TRUE;
+    entry->array_size = size;
 
     return TRUE;
 }
+
+// adds to list if not present, returns TRUE if successful and returns FALSE if already present
+// does not check in child dictionary
+BOOL dict_add_var(dictionary* dict, char* name, d_type type, void* value){ 
+
+    dict_entry* entry = dict_add_to_list(dict, name, type, value);
+    if(entry == NULL){
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 
 dict_result dict_get(dictionary* dict, char* name){
     if(!dict_valid(dict)){
@@ -96,6 +138,25 @@ dict_result dict_get(dictionary* dict, char* name){
     //check in child dictionary
     if(dict->child != NULL){
         dict_result child_result = dict_get(dict->child, name);
+        if(child_result.valid) return child_result;
+    }
+    
+    return (dict_result){FALSE, 0};
+}
+
+dict_result dict_array_get(dictionary* dict, char* name, size_t index){
+    if(!dict_valid(dict)){
+        return (dict_result){FALSE, 0};
+    }
+
+    dict_entry* entry = dict_get_entry(dict, name);
+    if(entry != NULL){
+        if(entry)
+    }
+
+    //check in child dictionary
+    if(dict->child != NULL){
+        dict_result child_result = dict_array_get(dict->child, name);
         if(child_result.valid) return child_result;
     }
     

@@ -14,14 +14,22 @@ extern char PARSE_ERROR_MESSAGE[];
 // <expression> ::= <add-expr> (('==' | '<' | '<=') <add-expr>)*
 // <add-expr> ::= <mul-expr> (('+' | '-') <mul-expr>)*
 // <mul-expr> ::= <atomic> (('*' | '/') <atomic>)*
-// <atomic> ::= ['-' | '!'](<literal> | <variable> | <parens>)
+// <atomic> ::= ['-' | '!'](<literal> | <var_or_array> | <parens>)
 // <parens> ::= '(' <expression> ')'
+// <var_or_array> ::== <variable> [ '[' <expression> ']' ]
+// <variable> ::== ('_' | <letter>)('_' | <letter> | <digit>)*
+
+
 
 // <program> ::= <multiple_statements>
 // <multiple_statements> ::= <statement> (<statement>)*
-// <statement> ::== <assignment> | <if> | <while> | <print> | <block> | 'break;' | 'stop;'
-// <initialization> ::== 'int' <assignment>
-// <assignment> ::== <variable> '=' <expression>';'
+// <statement> ::== <initialization> | <assignment> | <if> | <while> | <print> | <block> | 'break;' | 'stop;'
+
+// <initialization> ::== <var_init> | <array_init>
+// <var_init> ::== 'int' <variable> ['=' <expression>]';'
+// <array_init> ::== 'int['<expression>']' <variable>';'
+// <assignment> ::== <var_or_array> '=' <expression>';'
+
 // <if> ::== 'if (' <expression> ')' <statement> ['else' <statement>]
 // <while> ::== 'while (' <expression> ')' <statement>
 // <print> ::== 'print(' <expression> ')'';'

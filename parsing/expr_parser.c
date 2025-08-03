@@ -65,6 +65,11 @@ static expr *get_var_expr(char *name)
     return expression;
 }
 
+expr* get_literal(int value){
+    expr* expression = get_expr(Lit, value, NULL, NULL);
+    return expression;
+}
+
 parse_result_expr parse_expr(char *str)
 {   
     PARSE_INIT
@@ -230,14 +235,17 @@ static parse_result_expr parse_atomic(char *str)
     LINE_COUNTER = next.line_counter_before;
 
     parse_result_expr integer = parse_integer(str);
+    FATAL_CHECK(integer)
     if (integer.valid)
         return integer;
 
-    parse_result_expr variable = parse_variable(str);
+    parse_result_expr variable = parse_var_or_array(str);
+    FATAL_CHECK(variable)
     if (variable.valid)
         return variable;
 
     parse_result_expr parens = parse_parens(str);
+    FATAL_CHECK(parens)
     if (parens.valid)
         return parens;
 
@@ -304,6 +312,37 @@ parse_result_expr parse_variable(char *str)
 
     expr *var_expr = get_var_expr(buffer);
     return PARSE_RESULT_EXPR(var_expr, str);
+}
+
+parse_result_expr parse_var_or_array(char* str){
+    PARSE_INIT
+
+    parse_result_expr variable = parse_variable(str);
+    FATAL_CHECK(variable)
+    if(!variable.valid) REVERT
+
+    char* square_open_brackets = char_follows(variable.remaining, '[', FALSE);
+    if(square_open_brackets == NULL) return variable;
+    
+    parse_result_expr index = parse_expr(square_open_brackets);
+    FATAL_CHECK(index)
+    if(!index.valid){
+        free_expr(variable.expression);
+        FATAL_REVERT("Invalid index for array.")
+    }
+
+    char* square_close_brackets = char_follows(index.remaining, ']', FALSE);
+    if(square_close_brackets == NULL){
+        free_expr(variable.expression);
+        free_expr(index.expression);
+        FATAL_REVERT("Expected closing square bracket.")
+    }
+
+    variable.expression->type = Arr_Access;
+    variable.expression->expr_1 = index.expression;
+    variable.remaining = square_close_brackets;
+
+    return variable;
 }
 
 static parse_result_expr parse_parens(char *str)

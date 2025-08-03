@@ -1,10 +1,15 @@
 #pragma once
 
 #include "helper.h"
+#include "types.h"
 
 typedef struct dictionary_entry_t{
     char* name;
-    int value;
+    void* value;
+    d_type type;
+
+    BOOL array; 
+    size_t array_size;
 } dict_entry;
 
 typedef struct dictionary_t{
@@ -16,7 +21,8 @@ typedef struct dictionary_t{
 
 typedef struct dict_result_r{
     BOOL valid;
-    int result;
+    void* result;
+    d_type type;
 } dict_result;
 
 dictionary dict_new();

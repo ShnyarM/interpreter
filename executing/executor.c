@@ -84,6 +84,10 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
         }
     }
 
+    if(expression->type == Arr_Access){
+        res.value = 55;
+    }
+
     if(expression->type == Bool_Neg){
         res.value = !value1.value;
     }
@@ -123,6 +127,10 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
         }
     }
 
+    if(statement->type == Arr_Ass){
+        printf("Array ass\n");
+    }
+
     if(statement->type == Var_Init){
         BOOL result = dict_add(dict, statement->variable, inner_expression.value);
         // result == FALSE, then variable has already been initialized
@@ -131,6 +139,10 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
             exec.succesful = FALSE;
             return exec;
         }
+    }
+
+    if(statement->type == Arr_Init){
+        printf("Array Init\n");
     }
 
     if(statement->type == Print){

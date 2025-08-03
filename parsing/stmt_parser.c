@@ -26,6 +26,8 @@ extern char OPENING_BRACKET_ERROR[];
 extern char CLOSING_BRACKET_ERROR[];
 extern char OPENING_CURLY_BRACKET_ERROR[];
 extern char CLOSING_CURLY_BRACKET_ERROR[];
+extern char OPENING_SQUARE_BRACKET_ERROR[];
+extern char CLOSING_SQUARE_BRACKET_ERROR[];
 extern char SEMICOLON_ERROR[];
 
 stmt* get_plain_statement(s_type type);
@@ -53,6 +55,22 @@ stmt* get_ass_statement(char* variable, expr* expr, stmt* next_statement){
     stmt* statement = get_plain_statement(Ass);
     statement->variable = copy_of_string(variable);
     statement->expression = expr;
+    statement->next_statement = next_statement;
+    return statement;
+}
+
+stmt* get_arr_init_statement(char* variable, expr* size, stmt* next_statement){
+    stmt* statement = get_plain_statement(Arr_Init);
+    statement->variable = copy_of_string(variable);
+    statement->expression = size;
+    statement->next_statement = next_statement;
+    return statement;
+}
+
+stmt* get_var_init_statement(char* variable, expr* value, stmt* next_statement){
+    stmt* statement = get_plain_statement(Var_Init);
+    statement->variable = copy_of_string(variable);
+    statement->expression = value;
     statement->next_statement = next_statement;
     return statement;
 }
@@ -103,7 +121,7 @@ stmt* get_plain_statement(s_type type){
 static parse_result_stmt parse_assignment(char* str){
     PARSE_INIT
 
-    parse_result_expr variable = parse_variable(str);
+    parse_result_expr variable = parse_var_or_array(str);
     FATAL_CHECK(variable)
     if(!variable.valid) REVERT
 
@@ -125,22 +143,107 @@ static parse_result_stmt parse_assignment(char* str){
     }
 
     stmt* statement = get_ass_statement(variable.expression->variable, expression.expression, NULL);
+
+    //If variable being assigned is array element, change to array assignment
+    if(variable.expression->type == Arr_Access){
+        statement->type = Arr_Ass;
+        statement->expression_2 = variable.expression->expr_1; //Index value
+
+        variable.expression->expr_1 = NULL; //remove reference to expression, so it doesnt get free when freeing variable
+    }
+
     free_expr(variable.expression); //Free expression as we dont need it, only needed variable name
     return PARSE_RESULT_STMT(statement, last);
 }
 
-static parse_result_stmt parse_initialization(char* str){
+static parse_result_stmt parse_var_init(char* str){
     PARSE_INIT
 
     char* int_keyword = word_follows(str, "int", TRUE);
     if(int_keyword == NULL) REVERT
 
-    parse_result_stmt assignment = parse_assignment(int_keyword);
-    FATAL_CHECK(assignment)
-    if(!assignment.valid) FATAL_REVERT("Expected variable assignment after initialization keyword.")
+    parse_result_expr variable = parse_variable(int_keyword);
+    FATAL_CHECK(variable)
+    if(!variable.valid) FATAL_REVERT("Expected variable name after initialization keyword.")
 
-    assignment.statement->type = Var_Init;
-    return assignment;
+    char* equals = char_follows(variable.remaining, '=', FALSE);
+    if(equals == NULL){
+        // No direct value assignment, create assignment which assigns 0
+        char* semicolon = char_follows(variable.remaining, ';', FALSE);
+        FATAL_CHECK_NULL_WITH_FREE_EXPR(semicolon, SEMICOLON_ERROR, variable.expression)
+
+        stmt* statement = get_var_init_statement(variable.expression->variable, get_literal(0), NULL);
+        free_expr(variable.expression);
+        return PARSE_RESULT_STMT(statement, semicolon);
+    }
+
+    parse_result_expr expression = parse_expr(equals);
+    FATAL_CHECK(expression)
+    if(!expression.valid){
+        free_expr(variable.expression);
+        FATAL_REVERT("Invalid expression after variable initialization.")
+    }
+
+    char* semicolon = char_follows(expression.remaining, ';', FALSE);
+    if(semicolon == NULL){
+        free_expr(variable.expression);
+        free_expr(expression.expression);
+        FATAL_REVERT(SEMICOLON_ERROR)
+    }
+
+    stmt* statement = get_var_init_statement(variable.expression->variable, expression.expression, NULL);
+
+    free_expr(variable.expression);
+    return PARSE_RESULT_STMT(statement, semicolon);
+}
+
+static parse_result_stmt parse_arr_init(char* str){
+    PARSE_INIT
+
+    char* int_keyword = word_follows(str, "int", FALSE);
+    if(int_keyword == NULL) REVERT
+
+    char* open_square_brackets = char_follows(int_keyword, '[', FALSE);
+    if(open_square_brackets == NULL) REVERT
+
+    parse_result_expr size = parse_expr(open_square_brackets);
+    FATAL_CHECK(size)
+    if(!size.valid) FATAL_REVERT("Expected size of array being initialized.")
+
+    char* close_square_brackets = char_follows(size.remaining, ']', FALSE);
+    FATAL_CHECK_NULL_WITH_FREE_EXPR(close_square_brackets, CLOSING_SQUARE_BRACKET_ERROR, size.expression)
+
+    parse_result_expr variable = parse_variable(close_square_brackets);
+    FATAL_CHECK(variable)
+    if(!variable.valid) FATAL_REVERT("Expected variable name after array initialization.")
+
+    char* semicolon = char_follows(variable.remaining, ';', FALSE);
+    if(semicolon == NULL){
+        free_expr(size.expression);
+        free_expr(variable.expression);
+        if(char_follows(variable.remaining, '=', FALSE)){
+            FATAL_REVERT("Arrays initializations can't have assignments.")
+        }
+        FATAL_REVERT(SEMICOLON_ERROR)
+    }
+
+    stmt* statement = get_arr_init_statement(variable.expression->variable, size.expression, NULL);
+    free_expr(variable.expression);
+    return PARSE_RESULT_STMT(statement, semicolon);
+}
+
+static parse_result_stmt parse_initialization(char* str){
+    PARSE_INIT
+
+    parse_result_stmt arr_init = parse_arr_init(str);
+    FATAL_CHECK(arr_init)
+    if(arr_init.valid) return arr_init;
+
+    parse_result_stmt var_init = parse_var_init(str);
+    FATAL_CHECK(var_init)
+    if(var_init.valid) return var_init;
+
+    REVERT
 }
 
 static parse_result_stmt parse_else(char* str){

@@ -15,10 +15,12 @@ char OPENING_BRACKET_ERROR[] = "Expected opening bracket '('.";
 char CLOSING_BRACKET_ERROR[] = "Expected closing bracket ')'.";
 char OPENING_CURLY_BRACKET_ERROR[] = "Expected opening curly bracket '{'.";
 char CLOSING_CURLY_BRACKET_ERROR[] = "Expected closing curly bracket '}'.";
+char OPENING_SQUARE_BRACKET_ERROR[] = "Expected opening square bracket '['.";
+char CLOSING_SQUARE_BRACKET_ERROR[] = "Expected closing square bracket ']'.";
 char SEMICOLON_ERROR[] = "Semicolon missing.";
 
-#define RESERVED_KEYWORDS_LENGTH 6
-char RESERVED_KEYWORDS[RESERVED_KEYWORDS_LENGTH][10] = {"if", "else", "while", "print", "break", "stop"};
+#define RESERVED_KEYWORDS_LENGTH 7
+char RESERVED_KEYWORDS[RESERVED_KEYWORDS_LENGTH][10] = {"if", "else", "while", "print", "break", "stop", "int"};
 
 //MAJOR POINT FOR POTENTIAL LINE ERROR
 token_result get_next_char(char* str){

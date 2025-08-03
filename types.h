@@ -4,8 +4,9 @@
 #include <stdlib.h>
 #include "helper.h"
 
+typedef enum d_type_e {Int} d_type;
 
-typedef enum expr_type {Lit, Add, Sub, Mul, Div, Neg, Var, Bool_Neg, Eq, Lt, Lte} e_type;
+typedef enum expr_type {Lit, Add, Sub, Mul, Div, Neg, Var, Arr_Access, Bool_Neg, Eq, Lt, Lte} e_type;
 
 typedef struct expression_t{
     e_type type;
@@ -16,12 +17,13 @@ typedef struct expression_t{
     size_t line;                      // line at which this expression appears
 } expr;
 
-typedef enum statement_type {Ass, Var_Init, Print, If, While, Block, Brk, Stop} s_type;
+typedef enum statement_type {Ass, Arr_Ass, Var_Init, Arr_Init, Print, If, While, Block, Brk, Stop} s_type;
 
 typedef struct statement_t{
     s_type type;
     char* variable;
     expr* expression;
+    expr* expression_2;               // used for array assignments to store index
     struct statement_t* next_statement;
     size_t line;                      // line at which this expression appears
 
