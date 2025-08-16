@@ -17,6 +17,9 @@
         "type_traits": "c",
         "utility": "c",
         "random": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "compare": "c",
+        "data.h": "c",
+        "array.h": "c"
     }
 }

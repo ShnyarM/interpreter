@@ -80,4 +80,4 @@ int main(int argc, char** argv){
     printf("done");*/
 }
 
-//TODO: arrays...
+//TODO: make executor work with new "data" type (I think done for most part), TEST, finalize arrays

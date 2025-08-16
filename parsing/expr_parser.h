@@ -10,7 +10,7 @@ typedef struct parse_result_expr_t{
     BOOL fatal;         //If this is true mistake in code was found, abort everything and give error
 } parse_result_expr;
 
-expr* get_literal(int value);
+expr* get_number_literal(double value);
 parse_result_expr parse_expr(char* str);
 parse_result_expr parse_variable(char* str);
 parse_result_expr parse_var_or_array(char* str);

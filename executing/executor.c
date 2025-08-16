@@ -34,11 +34,16 @@ BOOL stop_next_execution(execution_result e){
 }
 
 static expr_eval_result eval_expr(expr* expression, dictionary* dict){
-    expr_eval_result res = {TRUE, 0};
+    expr_eval_result res = (expr_eval_result){TRUE, EMPTY_DATA};
     if(expression == NULL) return res;
 
     expr_eval_result value1 = eval_expr(expression->expr_1, dict);
     expr_eval_result value2 = eval_expr(expression->expr_2, dict);
+
+    BOOL both_num = IS_ATOMIC_NUM_TYPE(value1.data) && IS_ATOMIC_NUM_TYPE(value2.data);
+    // Get number values incase they are numbers and are needed
+    double num1 = GET_NUMBER_FROM_DATA(value1.data);
+    double num2 = GET_NUMBER_FROM_DATA(value2.data);
 
     if(!value1.succesful || !value2.succesful){
         res.succesful = FALSE;
@@ -46,37 +51,62 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
     }
 
     if(expression->type == Lit){
-        res.value = expression->val;
+        res.data = expression->data;
     }
 
     if(expression->type == Add){
-        res.value = value1.value + value2.value;
+        if(!both_num){
+            res.succesful = FALSE;
+            return res;
+        }
+
+        res.data = NUMBER_DATA(num1 + num2);
     }
 
     if(expression->type == Sub){
-        res.value = value1.value - value2.value;
+        if(!both_num){
+            res.succesful = FALSE;
+            return res;
+        }
+
+        res.data = NUMBER_DATA(num1 - num2);
     }
 
     if(expression->type == Mul){
-        res.value = value1.value * value2.value;
+        if(!both_num){
+            res.succesful = FALSE;
+            return res;
+        }
+
+        res.data = NUMBER_DATA(num1 * num2);
     }
 
     if(expression->type == Div){
-        if(value2.value == 0){
+        if(!both_num){
+            res.succesful = FALSE;
+            return res;
+        }
+
+        if(num2 == 0){
             write_exec_error("Divide by zero error.", expression->line);
             res.succesful = FALSE;
             return res;
         }
-        res.value = value1.value / value2.value;
+        res.data = NUMBER_DATA(num1 / num2);
     }
 
     if(expression->type == Neg){
-        res.value = -value1.value;
+        if(IS_ATOMIC_NUM_TYPE(value1.data)){
+            res.succesful = FALSE;
+            return res;
+        }
+
+        res.data = NUMBER_DATA(-num1);
     }
 
     if(expression->type == Var){
-        dict_result var_value = dict_get(dict, expression->variable);
-        if(var_value.valid) res.value = var_value.result;
+        data_access_result var_value = dict_get(dict, expression->variable);
+        if(var_value.valid) res.data = var_value.result;
         else{
             write_var_not_init_error(expression->variable, expression->line);
             res.succesful = FALSE;
@@ -85,23 +115,43 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
     }
 
     if(expression->type == Arr_Access){
-        res.value = 55;
+        res.data = NUMBER_DATA(55);
     }
 
     if(expression->type == Bool_Neg){
-        res.value = !value1.value;
+        if(IS_ATOMIC_NUM_TYPE(value1.data)){
+            res.succesful = FALSE;
+            return res;
+        }
+
+        res.data = NUMBER_DATA(!num1);
     }
 
     if(expression->type == Eq){
-        res.value = value1.value == value2.value;
+        if(!both_num){
+            res.succesful = FALSE;
+            return res;
+        }
+
+        res.data = NUMBER_DATA(num1 == num2);
     }
 
     if(expression->type == Lt){
-        res.value = value1.value < value2.value;
+        if(!both_num){
+            res.succesful = FALSE;
+            return res;
+        }
+
+        res.data = NUMBER_DATA(num1 < num2);
     }
 
     if(expression->type == Lte){
-        res.value = value1.value <= value2.value;
+        if(!both_num){
+            res.succesful = FALSE;
+            return res;
+        }
+
+        res.data = NUMBER_DATA(num1 <= num2);
     }
 
     return res;
@@ -118,7 +168,7 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == Ass){
-        BOOL result = dict_update(dict, statement->variable, inner_expression.value);
+        BOOL result = dict_update(dict, statement->variable, inner_expression.data);
         // result == FALSE, then variable has not been initialized
         if(!result){
             write_var_not_init_error(statement->variable, statement->line);
@@ -128,11 +178,12 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == Arr_Ass){
+        // TO DO
         printf("Array ass\n");
     }
 
     if(statement->type == Var_Init){
-        BOOL result = dict_add(dict, statement->variable, inner_expression.value);
+        BOOL result = dict_add(dict, statement->variable, inner_expression.data);
         // result == FALSE, then variable has already been initialized
         if(!result){
             write_exec_error("Variable has already been initialized.", statement->line);
@@ -146,11 +197,11 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == Print){
-        printf("%d\n", inner_expression.value);
+        printf("%.0f\n", GET_NUMBER_FROM_DATA(inner_expression.data));
     }
 
     if(statement->type == If){
-        if(inner_expression.value){
+        if(GET_NUMBER_FROM_DATA(inner_expression.data)){
             exec = run_program(statement->inner_stmt_1, dict);
         }else{
             exec = run_program(statement->inner_stmt_2, dict);
@@ -158,7 +209,7 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == While){
-        while(inner_expression.value){
+        while(GET_NUMBER_FROM_DATA(inner_expression.data)){
             exec = run_program(statement->inner_stmt_1, dict);
             if(stop_next_execution(exec)){
                 exec.break_while = FALSE;

@@ -1,4 +1,4 @@
 int hello = 5*3;
-int[] arr;
+int[45] arr;
 
 print(hello);

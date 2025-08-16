@@ -46,11 +46,11 @@ void free_expr(expr *e)
     free(e);
 }
 
-static expr *get_expr(e_type type, int val, expr *ex_1, expr *ex_2)
+static expr *get_expr(e_type type, data data, expr *ex_1, expr *ex_2)
 {
     expr *expression = (expr *)malloc(sizeof(expr));
     expression->type = type;
-    expression->val = val;
+    expression->data = data;
     expression->variable = NULL;
     expression->expr_1 = ex_1;
     expression->expr_2 = ex_2;
@@ -60,13 +60,13 @@ static expr *get_expr(e_type type, int val, expr *ex_1, expr *ex_2)
 
 static expr *get_var_expr(char *name)
 {
-    expr *expression = get_expr(Var, 0, NULL, NULL);
+    expr *expression = get_expr(Var, EMPTY_DATA, NULL, NULL);
     expression->variable = copy_of_string(name); // makes its own copy
     return expression;
 }
 
-expr* get_literal(int value){
-    expr* expression = get_expr(Lit, value, NULL, NULL);
+expr* get_number_literal(double value){
+    expr* expression = get_expr(Lit, NUMBER_DATA(value), NULL, NULL);
     return expression;
 }
 
@@ -119,7 +119,7 @@ parse_result_expr parse_expr(char *str)
             break;
         }
 
-        expr *combined = get_expr(operator, 0, add_expr.expression, next_add_expr.expression);
+        expr *combined = get_expr(operator, EMPTY_DATA, add_expr.expression, next_add_expr.expression);
 
         add_expr.expression = combined;
         add_expr.remaining = next_add_expr.remaining;
@@ -157,7 +157,7 @@ static parse_result_expr parse_add_expr(char *str)
             break;
         }
 
-        expr *combined = get_expr(char_to_operator(next.token), 0, mul_expr.expression, next_mul_expr.expression);
+        expr *combined = get_expr(char_to_operator(next.token), EMPTY_DATA, mul_expr.expression, next_mul_expr.expression);
 
         mul_expr.expression = combined;
         mul_expr.remaining = next_mul_expr.remaining;
@@ -195,7 +195,7 @@ static parse_result_expr parse_mul_expr(char *str)
             break;
         }
 
-        expr *combined = get_expr(char_to_operator(next.token), 0, atomic.expression, next_atomic.expression);
+        expr *combined = get_expr(char_to_operator(next.token), EMPTY_DATA, atomic.expression, next_atomic.expression);
 
         atomic.expression = combined;
         atomic.remaining = next_atomic.remaining;
@@ -216,7 +216,7 @@ static parse_result_expr parse_atomic(char *str)
         FATAL_CHECK(atomic)
         if (atomic.valid)
         {
-            expr *neg = get_expr(Neg, 0, atomic.expression, NULL);
+            expr *neg = get_expr(Neg, EMPTY_DATA, atomic.expression, NULL);
             atomic.expression = neg;
             return atomic;
         }
@@ -227,7 +227,7 @@ static parse_result_expr parse_atomic(char *str)
         FATAL_CHECK(atomic)
         if (atomic.valid)
         {
-            expr *bool_neg = get_expr(Bool_Neg, 0, atomic.expression, NULL);
+            expr *bool_neg = get_expr(Bool_Neg, EMPTY_DATA, atomic.expression, NULL);
             atomic.expression = bool_neg;
             return atomic;
         }
@@ -276,7 +276,7 @@ static parse_result_expr parse_integer(char *str)
         str--;
     }
 
-    expr *literal = get_expr(Lit, value, NULL, NULL);
+    expr *literal = get_expr(Lit, NUMBER_DATA((double)value), NULL, NULL);
     return PARSE_RESULT_EXPR(literal, str_end);
 }
 

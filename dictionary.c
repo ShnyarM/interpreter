@@ -42,28 +42,9 @@ static dict_entry* dict_get_entry(dictionary* dict, char* name){
     return NULL;
 }
 
-// Return TRUE if it was able to update it
-BOOL dict_update(dictionary* dict, char* name, void* value){
-    if(!dict_valid(dict)) return FALSE;
-
-    dict_entry* entry = dict_get_entry(dict, name);
-    if(entry != NULL){
-        entry->value = value;
-        return TRUE;
-    }
-
-    //search in child dictionary
-    if(dict->child != NULL){
-        BOOL result = dict_update(dict->child, name, value);
-        return result;
-    }
-
-    return FALSE;
-}
-
-// adds to list if not present, returns ptr to entry if successful and returns NULL if already present
+// adds variable to list if not present, returns ptr to entry if successful and returns NULL if already present
 // does not check in child dictionary
-static dict_entry* dict_add_to_list(dictionary* dict, char* name, d_type type, void* value){ 
+static dict_entry* dict_add_to_list(dictionary* dict, char* name, data data){ 
 
     //Create new dictionary if invalid
     if(!dict_valid(dict)){
@@ -79,10 +60,7 @@ static dict_entry* dict_add_to_list(dictionary* dict, char* name, d_type type, v
 
     dict_entry* entry = dict->list+(dict->length);
     entry->name = copy_of_string(name);
-    entry->value = value;
-    entry->type = type;
-    entry->array = FALSE;
-    entry->array_size = 0;
+    entry->data = data;
 
     dict->length++;
 
@@ -91,34 +69,9 @@ static dict_entry* dict_add_to_list(dictionary* dict, char* name, d_type type, v
 
 // adds to list if not present, returns TRUE if successful and returns FALSE if already present
 // does not check in child dictionary
-BOOL dict_add_array(dictionary* dict, char* name, d_type type, int size){ 
+BOOL dict_add(dictionary* dict, char* name, data data){ 
 
-    if(size <= 0) return FALSE;
-
-    void* ptr;
-    if(type == Int){
-        ptr = malloc(sizeof(int)*size);
-    }else{
-        return FALSE;
-    }
-
-    dict_entry* entry = dict_add_to_list(dict, name, type, ptr);
-    if(entry == NULL){
-        free(ptr);
-        return FALSE;
-    }
-
-    entry->array = TRUE;
-    entry->array_size = size;
-
-    return TRUE;
-}
-
-// adds to list if not present, returns TRUE if successful and returns FALSE if already present
-// does not check in child dictionary
-BOOL dict_add_var(dictionary* dict, char* name, d_type type, void* value){ 
-
-    dict_entry* entry = dict_add_to_list(dict, name, type, value);
+    dict_entry* entry = dict_add_to_list(dict, name, data);
     if(entry == NULL){
         return FALSE;
     }
@@ -126,41 +79,62 @@ BOOL dict_add_var(dictionary* dict, char* name, d_type type, void* value){
     return TRUE;
 }
 
-
-dict_result dict_get(dictionary* dict, char* name){
-    if(!dict_valid(dict)){
-        return (dict_result){FALSE, 0};
-    }
+// Updates a existing variable
+// Return TRUE if it was able to update it
+BOOL dict_update(dictionary* dict, char* name, data data){
+    if(!dict_valid(dict)) return FALSE;
 
     dict_entry* entry = dict_get_entry(dict, name);
-    if(entry != NULL) return (dict_result){TRUE, entry->value};
-
-    //check in child dictionary
-    if(dict->child != NULL){
-        dict_result child_result = dict_get(dict->child, name);
-        if(child_result.valid) return child_result;
+    //TO DO: add proper data type equality check
+    if(entry != NULL && entry->data.type.type == data.type.type){
+        entry->data = data;
+        return TRUE;
     }
-    
-    return (dict_result){FALSE, 0};
+
+    //search in child dictionary
+    if(dict->child != NULL){
+        BOOL result = dict_update(dict->child, name, data);
+        return result;
+    }
+
+    return FALSE;
 }
 
-dict_result dict_array_get(dictionary* dict, char* name, size_t index){
-    if(!dict_valid(dict)){
-        return (dict_result){FALSE, 0};
-    }
+// Returns a pointer to the data storage of the variable
+// Allows direct access to data for manipulating arrays
+// Returns NULL if variable doesnt exist
+data* dict_get_data_ref(dictionary* dict, char* name){
+    if(!dict_valid(dict)) return FALSE;
 
     dict_entry* entry = dict_get_entry(dict, name);
     if(entry != NULL){
-        if(entry)
+        return &(entry->data);
     }
+
+    //search in child dictionary
+    if(dict->child != NULL){
+        BOOL result = dict_get_data_ref(dict->child, name);
+        return result;
+    }
+
+    return NULL;
+}
+
+data_access_result dict_get(dictionary* dict, char* name){
+    if(!dict_valid(dict)){
+        return INVALID_DATA_ACCESS_RESULT;
+    }
+
+    dict_entry* entry = dict_get_entry(dict, name);
+    if(entry != NULL) return (data_access_result){TRUE, entry->data};
 
     //check in child dictionary
     if(dict->child != NULL){
-        dict_result child_result = dict_array_get(dict->child, name);
+        data_access_result child_result = dict_get(dict->child, name);
         if(child_result.valid) return child_result;
     }
     
-    return (dict_result){FALSE, 0};
+    return INVALID_DATA_ACCESS_RESULT;
 }
 
 static void dict_increase_capacity(dictionary* dict){

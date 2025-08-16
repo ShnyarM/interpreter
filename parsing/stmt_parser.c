@@ -172,7 +172,7 @@ static parse_result_stmt parse_var_init(char* str){
         char* semicolon = char_follows(variable.remaining, ';', FALSE);
         FATAL_CHECK_NULL_WITH_FREE_EXPR(semicolon, SEMICOLON_ERROR, variable.expression)
 
-        stmt* statement = get_var_init_statement(variable.expression->variable, get_literal(0), NULL);
+        stmt* statement = get_var_init_statement(variable.expression->variable, get_number_literal(0), NULL);
         free_expr(variable.expression);
         return PARSE_RESULT_STMT(statement, semicolon);
     }

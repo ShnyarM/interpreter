@@ -3,20 +3,22 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include "helper.h"
+#include "data.h"
 
-typedef enum d_type_e {Int} d_type;
-
+// Expressions
 typedef enum expr_type {Lit, Add, Sub, Mul, Div, Neg, Var, Arr_Access, Bool_Neg, Eq, Lt, Lte} e_type;
 
 typedef struct expression_t{
     e_type type;
-    int val;                          // Value if it is literal
+    data data;                          // Value if it is literal
     char* variable;                   // Name if it is variable
     struct expression_t *expr_1;
     struct expression_t *expr_2;
     size_t line;                      // line at which this expression appears
 } expr;
 
+
+// Statements
 typedef enum statement_type {Ass, Arr_Ass, Var_Init, Arr_Init, Print, If, While, Block, Brk, Stop} s_type;
 
 typedef struct statement_t{
