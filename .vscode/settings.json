@@ -20,6 +20,7 @@
         "stdlib.h": "c",
         "compare": "c",
         "data.h": "c",
-        "array.h": "c"
+        "array.h": "c",
+        "_parser_helper.h": "c"
     }
 }

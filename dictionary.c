@@ -103,7 +103,7 @@ BOOL dict_update(dictionary* dict, char* name, data data){
 // Returns a pointer to the data storage of the variable
 // Allows direct access to data for manipulating arrays
 // Returns NULL if variable doesnt exist
-data* dict_get_data_ref(dictionary* dict, char* name){
+/*data* dict_get_data_ref(dictionary* dict, char* name){
     if(!dict_valid(dict)) return FALSE;
 
     dict_entry* entry = dict_get_entry(dict, name);
@@ -118,7 +118,7 @@ data* dict_get_data_ref(dictionary* dict, char* name){
     }
 
     return NULL;
-}
+}*/
 
 data_access_result dict_get(dictionary* dict, char* name){
     if(!dict_valid(dict)){

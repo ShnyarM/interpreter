@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall
 
-OBJS = main.o helper.o dictionary.o array.o executor.o _parser_helper.o expr_parser.o stmt_parser.o
+OBJS = main.o helper.o dictionary.o data.o executor.o _parser_helper.o expr_parser.o stmt_parser.o
 
 parse: $(OBJS)
 	$(CC) $(CFLAGS) -o parse $(OBJS)
@@ -19,8 +19,8 @@ helper.o: helper.c helper.h
 dictionary.o: dictionary.c helper.h dictionary.h data.h
 	$(CC) $(CFLAGS) -c dictionary.c
 
-array.o: array.c helper.h array.h types.h data.h
-	$(CC) $(CFLAGS) -c array.c
+data.o: data.c helper.h types.h data.h
+	$(CC) $(CFLAGS) -c data.c
 
 executor.o: executing/executor.c executing/executor.h helper.h types.h dictionary.h data.h
 	$(CC) $(CFLAGS) -c executing/executor.c

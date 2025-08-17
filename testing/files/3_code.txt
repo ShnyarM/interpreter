@@ -2,14 +2,14 @@ while(0){
     print(5);
 }
 
-int i=0;
-int limit = 5;
+number i=0;
+number limit = 5;
 while(i < limit){
     print(i);
     i=i+1;
 }
 
-int x=7;
+number x=7;
 while(1){
     print(x);
     
@@ -20,11 +20,11 @@ while(1){
     x=x+1;
 }
 
-int n=15;
+number n=15;
 while(n<17){
     print(n);
 
-    int t=0;
+    number t=0;
     while(1){
         print(t);
         if(t==1){

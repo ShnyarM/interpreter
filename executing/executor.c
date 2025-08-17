@@ -96,7 +96,7 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
     }
 
     if(expression->type == Neg){
-        if(IS_ATOMIC_NUM_TYPE(value1.data)){
+        if(!IS_ATOMIC_NUM_TYPE(value1.data)){
             res.succesful = FALSE;
             return res;
         }
@@ -115,11 +115,36 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
     }
 
     if(expression->type == Arr_Access){
-        res.data = NUMBER_DATA(55);
+        int index = (int)GET_NUMBER_FROM_DATA(value1.data);
+
+        data_access_result data_array = dict_get(dict, expression->variable);
+        if(!data_array.valid){
+            write_var_not_init_error(expression->variable, expression->line);
+            res.succesful = FALSE;
+            return res;
+        }
+        if(!IS_ARRAY(data_array.result)){
+            write_exec_error("Variable is not an array.", expression->line);
+            res.succesful = FALSE;
+            return res;
+        }
+        if(index < 0 || index >= data_array.result.size){
+            write_exec_error("Index is not within array bounds.", expression->line);
+            res.succesful = FALSE;
+            return res;
+        }
+
+        data_access_result var_value = data_array_get(data_array.result.value.arr, index);
+        if(var_value.valid) res.data = var_value.result;
+        else{
+            write_exec_error("Couldn't get value from array.", expression->line);
+            res.succesful = FALSE;
+            return res;
+        }
     }
 
     if(expression->type == Bool_Neg){
-        if(IS_ATOMIC_NUM_TYPE(value1.data)){
+        if(!IS_ATOMIC_NUM_TYPE(value1.data)){
             res.succesful = FALSE;
             return res;
         }
@@ -178,8 +203,40 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == Arr_Ass){
-        // TO DO
-        printf("Array ass\n");
+        expr_eval_result index_expression = eval_expr(statement->expression_2, dict);
+        if(!index_expression.succesful){
+            exec.succesful = FALSE;
+            return exec;
+        }
+        int index = (int)GET_NUMBER_FROM_DATA(index_expression.data);
+
+        data value = inner_expression.data;
+
+        data_access_result data_array = dict_get(dict, statement->variable);
+        if(!data_array.valid){
+            write_var_not_init_error(statement->variable, statement->line);
+            exec.succesful = FALSE;
+            return exec;
+        }
+        if(!IS_ARRAY(data_array.result)){
+            write_exec_error("Variable is not an array.", statement->line);
+            exec.succesful = FALSE;
+            return exec;
+        }
+        if(index < 0 || index >= data_array.result.size){
+            write_exec_error("Index is not within array bounds.", statement->line);
+            exec.succesful = FALSE;
+            return exec;
+        }
+
+        BOOL result = data_array_set(data_array.result.value.arr, index, value);
+
+        // result == FALSE, then variable has already been initialized
+        if(!result){
+            write_exec_error("Couldn't assign value to array", statement->line);
+            exec.succesful = FALSE;
+            return exec;
+        }
     }
 
     if(statement->type == Var_Init){
@@ -193,7 +250,23 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == Arr_Init){
-        printf("Array Init\n");
+        int size = (int)GET_NUMBER_FROM_DATA(inner_expression.data);
+        if(size <= 0){
+            write_exec_error("Array size can't be zero or negative.", statement->line);
+            exec.succesful = FALSE;
+            return exec;
+        }
+
+        data* array_ptr = data_array_new(size); 
+        data data_array = NUMBER_ARRAY_DATA(array_ptr, size);
+        BOOL result = dict_add(dict, statement->variable, data_array);
+
+        // result == FALSE, then variable has already been initialized
+        if(!result){
+            write_exec_error("Variable has already been initialized.", statement->line);
+            exec.succesful = FALSE;
+            return exec;
+        }
     }
 
     if(statement->type == Print){

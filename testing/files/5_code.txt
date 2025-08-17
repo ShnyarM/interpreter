@@ -1,5 +1,5 @@
-int n=1;
-int t=((1+1)-6)*3+n;
+number n=1;
+number t=((1+1)-6)*3+n;
 print(t);
 
 if(n==0){
@@ -9,7 +9,7 @@ if(n==0){
     print(60);
 }
 
-int i = 0;
+number i = 0;
 while(1){
     i=0;
     while(1){
@@ -24,7 +24,7 @@ while(1){
 }
 while(1){
     print(i);
-    int i=i+1;
+    number i=i+1;
     if(i == 6){
         break;
     }
@@ -33,10 +33,10 @@ while(1){
 print(55555555);
 
 
-int before = 0;
-int current = 1;
-int new = 0;
-int counter = 0;
+number before = 0;
+number current = 1;
+number new = 0;
+number counter = 0;
 while(counter < n){
     new = current+before;
     before = current;
@@ -46,7 +46,7 @@ while(counter < n){
     counter = counter+1;
 }
 
-int x=4;
+number x=4;
 
 print(current);
 print(6666666);

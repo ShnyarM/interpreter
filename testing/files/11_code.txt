@@ -1,15 +1,15 @@
-int x = 5;
-int z = 90;
+number x = 5;
+number z = 90;
 {
     print(x);
-    int x = 6;
+    number x = 6;
     print(x);
-    int y = 8;
+    number y = 8;
     print(y);
     {
-        int y = 9;
+        number y = 9;
         print(y);
-        int x= 10;
+        number x= 10;
         print(x);
         z = 100;
     }
@@ -17,9 +17,9 @@ int z = 90;
     print(x);
 }
 
-int i = 0;
+number i = 0;
 if(1){
-    int i = 1;
+    number i = 1;
 }
 print(i);
 

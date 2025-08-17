@@ -159,7 +159,7 @@ static parse_result_stmt parse_assignment(char* str){
 static parse_result_stmt parse_var_init(char* str){
     PARSE_INIT
 
-    char* int_keyword = word_follows(str, "int", TRUE);
+    char* int_keyword = word_follows(str, "number", TRUE);
     if(int_keyword == NULL) REVERT
 
     parse_result_expr variable = parse_variable(int_keyword);
@@ -200,7 +200,7 @@ static parse_result_stmt parse_var_init(char* str){
 static parse_result_stmt parse_arr_init(char* str){
     PARSE_INIT
 
-    char* int_keyword = word_follows(str, "int", FALSE);
+    char* int_keyword = word_follows(str, "number", FALSE);
     if(int_keyword == NULL) REVERT
 
     char* open_square_brackets = char_follows(int_keyword, '[', FALSE);

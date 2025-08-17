@@ -1,4 +1,14 @@
-int hello = 5*3;
-int[45] arr;
+number n = 500000;
 
-print(hello);
+number[n] arr;
+number i = 0;
+while(i < n){
+    arr[i] = i;
+    i=i+1;
+}
+
+number j = 0;
+while(j < n){
+    print(1+arr[j]);
+    j=j+1;
+}
