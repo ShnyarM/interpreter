@@ -1,0 +1,5 @@
+{
+	"output": "There was an error while running the script. Error:\nRuntime error on line 3: Array size can't be zero or negative.",
+	"return_code": "1",
+	"description": "Negative array size."
+}

@@ -59,10 +59,11 @@ stmt* get_ass_statement(char* variable, expr* expr, stmt* next_statement){
     return statement;
 }
 
-stmt* get_arr_init_statement(char* variable, expr* size, stmt* next_statement){
+stmt* get_arr_init_statement(char* variable, expr* size, data_type type, stmt* next_statement){
     stmt* statement = get_plain_statement(Arr_Init);
     statement->variable = copy_of_string(variable);
     statement->expression = size;
+    statement->data_type = type;
     statement->next_statement = next_statement;
     return statement;
 }
@@ -200,10 +201,10 @@ static parse_result_stmt parse_var_init(char* str){
 static parse_result_stmt parse_arr_init(char* str){
     PARSE_INIT
 
-    char* int_keyword = word_follows(str, "number", FALSE);
-    if(int_keyword == NULL) REVERT
+    char* number_keyword = word_follows(str, "number", FALSE);
+    if(number_keyword == NULL) REVERT
 
-    char* open_square_brackets = char_follows(int_keyword, '[', FALSE);
+    char* open_square_brackets = char_follows(number_keyword, '[', FALSE);
     if(open_square_brackets == NULL) REVERT
 
     parse_result_expr size = parse_expr(open_square_brackets);
@@ -227,7 +228,8 @@ static parse_result_stmt parse_arr_init(char* str){
         FATAL_REVERT(SEMICOLON_ERROR)
     }
 
-    stmt* statement = get_arr_init_statement(variable.expression->variable, size.expression, NULL);
+    data_type type = NUMBER_ATOMIC_DATA_TYPE; // denotes the type of the values inside the array
+    stmt* statement = get_arr_init_statement(variable.expression->variable, size.expression, type, NULL);
     free_expr(variable.expression);
     return PARSE_RESULT_STMT(statement, semicolon);
 }

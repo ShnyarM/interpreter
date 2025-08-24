@@ -56,6 +56,7 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
 
     if(expression->type == Add){
         if(!both_num){
+            write_exec_error("Invalid operands for '+' operator.", expression->line);
             res.succesful = FALSE;
             return res;
         }
@@ -65,6 +66,7 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
 
     if(expression->type == Sub){
         if(!both_num){
+            write_exec_error("Invalid operands for '-' operator.", expression->line);
             res.succesful = FALSE;
             return res;
         }
@@ -74,6 +76,7 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
 
     if(expression->type == Mul){
         if(!both_num){
+            write_exec_error("Invalid operands for '*' operator.", expression->line);
             res.succesful = FALSE;
             return res;
         }
@@ -83,6 +86,7 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
 
     if(expression->type == Div){
         if(!both_num){
+            write_exec_error("Invalid operands for '/' operator.", expression->line);
             res.succesful = FALSE;
             return res;
         }
@@ -97,6 +101,7 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
 
     if(expression->type == Neg){
         if(!IS_ATOMIC_NUM_TYPE(value1.data)){
+            write_exec_error("Invalid operand for negation operator.", expression->line);
             res.succesful = FALSE;
             return res;
         }
@@ -145,6 +150,7 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
 
     if(expression->type == Bool_Neg){
         if(!IS_ATOMIC_NUM_TYPE(value1.data)){
+            write_exec_error("Invalid operand for '!' operator.", expression->line);
             res.succesful = FALSE;
             return res;
         }
@@ -154,6 +160,7 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
 
     if(expression->type == Eq){
         if(!both_num){
+            write_exec_error("Invalid operand for '==' operator.", expression->line);
             res.succesful = FALSE;
             return res;
         }
@@ -163,6 +170,7 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
 
     if(expression->type == Lt){
         if(!both_num){
+            write_exec_error("Invalid operand for '<' operator.", expression->line);
             res.succesful = FALSE;
             return res;
         }
@@ -172,6 +180,7 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
 
     if(expression->type == Lte){
         if(!both_num){
+            write_exec_error("Invalid operand for '<=' operator.", expression->line);
             res.succesful = FALSE;
             return res;
         }
@@ -180,6 +189,25 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
     }
 
     return res;
+}
+
+void print_data(data d, BOOL new_line){
+    if(IS_ARRAY(d)){ //If its array, print every value
+        printf("[");
+
+        int size = d.size;
+        for(int i = 0; i < size-1; i++){
+            print_data(d.value.arr[i], FALSE);
+            printf(", ");
+        }
+
+        print_data(d.value.arr[size-1], FALSE);
+        printf("]");
+    }else{
+        printf("%.15g", GET_NUMBER_FROM_DATA(d));
+    }
+
+    if(new_line) printf("\n");
 }
 
 execution_result run_single_statement(stmt* statement, dictionary* dict){
@@ -193,10 +221,12 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == Ass){
-        BOOL result = dict_update(dict, statement->variable, inner_expression.data);
+        data_update_result result = dict_update(dict, statement->variable, inner_expression.data);
         // result == FALSE, then variable has not been initialized
-        if(!result){
-            write_var_not_init_error(statement->variable, statement->line);
+        if(!result.valid){
+            if(result.reason == NotInitialized) write_var_not_init_error(statement->variable, statement->line);
+            else if(result.reason == DifferentType) write_exec_error("Cannot assign to variable, as expression has different type.", statement->line);
+
             exec.succesful = FALSE;
             return exec;
         }
@@ -229,11 +259,14 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
             return exec;
         }
 
-        BOOL result = data_array_set(data_array.result.value.arr, index, value);
+        data_update_result result = data_array_set(data_array.result.value.arr, index, value);
 
         // result == FALSE, then variable has already been initialized
-        if(!result){
-            write_exec_error("Couldn't assign value to array", statement->line);
+        if(!result.valid){
+            if(result.reason == NotInIndexRange) write_exec_error("Index is not within array bounds.", statement->line);
+            else if(result.reason == DifferentType) write_exec_error("Cannot assign to variable, as expression has different type.", statement->line);
+            else write_exec_error("Couldn't assign value to variable.", statement->line);
+
             exec.succesful = FALSE;
             return exec;
         }
@@ -257,7 +290,7 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
             return exec;
         }
 
-        data* array_ptr = data_array_new(size); 
+        data* array_ptr = data_array_new(size, statement->data_type); 
         data data_array = NUMBER_ARRAY_DATA(array_ptr, size);
         BOOL result = dict_add(dict, statement->variable, data_array);
 
@@ -270,7 +303,7 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == Print){
-        printf("%.0f\n", GET_NUMBER_FROM_DATA(inner_expression.data));
+        print_data(inner_expression.data, TRUE);
     }
 
     if(statement->type == If){

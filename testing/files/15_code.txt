@@ -1,0 +1,3 @@
+number[41] arr;
+number[3] arr2;
+arr[1] = arr2;

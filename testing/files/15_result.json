@@ -1,0 +1,5 @@
+{
+	"output": "There was an error while running the script. Error:\nRuntime error on line 3: Cannot assign to variable, as expression has different type.",
+	"return_code": "1",
+	"description": "Assigning wrong type inside array."
+}

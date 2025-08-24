@@ -28,6 +28,7 @@ typedef struct statement_t{
     expr* expression_2;               // used for array assignments to store index
     struct statement_t* next_statement;
     size_t line;                      // line at which this expression appears
+    data_type data_type;              // for variable initialization statements, store the type of the variable
 
     struct statement_t* inner_stmt_1; //Used for if true branch, while and block
     struct statement_t* inner_stmt_2; //used for if false branch (else path)$

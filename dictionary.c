@@ -81,23 +81,25 @@ BOOL dict_add(dictionary* dict, char* name, data data){
 
 // Updates a existing variable
 // Return TRUE if it was able to update it
-BOOL dict_update(dictionary* dict, char* name, data data){
-    if(!dict_valid(dict)) return FALSE;
+data_update_result dict_update(dictionary* dict, char* name, data data){
+    if(!dict_valid(dict)) return (data_update_result){FALSE, NoDict};
 
     dict_entry* entry = dict_get_entry(dict, name);
-    //TO DO: add proper data type equality check
-    if(entry != NULL && entry->data.type.type == data.type.type){
+
+    if(entry != NULL){
+        if(!IS_SAME_TYPE(data, entry->data)) return (data_update_result){FALSE, DifferentType};
+
         entry->data = data;
-        return TRUE;
+        return (data_update_result){TRUE, NoFailure};
     }
 
     //search in child dictionary
     if(dict->child != NULL){
-        BOOL result = dict_update(dict->child, name, data);
+        data_update_result result = dict_update(dict->child, name, data);
         return result;
     }
 
-    return FALSE;
+    return (data_update_result){FALSE, NotInitialized};
 }
 
 // Returns a pointer to the data storage of the variable
@@ -154,9 +156,10 @@ static void dict_increase_capacity(dictionary* dict){
 }
 
 void dict_free(dictionary* dict){
-    //Free each variable string
+    //Free each variable
     for(int i = 0; i < dict->length; i++){
         free(dict->list[i].name);
+        data_free(dict->list[i].data);
     }
 
     free(dict->list);

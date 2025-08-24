@@ -18,7 +18,7 @@ typedef struct dictionary_t{
 
 dictionary dict_new();
 dictionary dict_get_extension(dictionary* child);
-BOOL dict_update(dictionary* dict, char* name, data data);
+data_update_result dict_update(dictionary* dict, char* name, data data);
 data* dict_get_data_ref(dictionary* dict, char* name);
 BOOL dict_add(dictionary* dict, char* name, data data);
 data_access_result dict_get(dictionary* dict, char* name);

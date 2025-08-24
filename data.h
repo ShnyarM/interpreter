@@ -8,7 +8,8 @@
 #define NUMBER_ARRAY_DATA_TYPE ((data_type){Number, TRUE})
 
 #define IS_ARRAY(d) (d.type.is_array)
-#define IS_ATOMIC_NUM_TYPE(d) (d.type.type == Number && d.type.is_array == FALSE)
+#define IS_ATOMIC_NUM_TYPE(d) (d.type.atomic_type == Number && d.type.is_array == FALSE)
+#define IS_SAME_TYPE(d1, d2) (d1.type.atomic_type == d2.type.atomic_type && d1.type.is_array == d2.type.is_array)
 
 
 // Data with value
@@ -29,7 +30,7 @@ struct data_e;
 typedef enum atomic_d_type_e {None, Number} atomic_data_type;
 
 typedef struct data_type_e {
-    atomic_data_type type;
+    atomic_data_type atomic_type;
     BOOL is_array;
 } data_type;
 
@@ -49,7 +50,15 @@ typedef struct data_access_result_t{
     data result;
 } data_access_result;
 
-data* data_array_new(int size);
-BOOL data_array_set(data* arr, int index, data data);
+enum data_update_failure_reason {NoFailure, NotInitialized, DifferentType, NoDict, NotInIndexRange};
+
+typedef struct data_update_result_t{
+    BOOL valid;
+    enum data_update_failure_reason reason;
+} data_update_result;
+
+data* data_array_new(int size, data_type type);
+data_update_result data_array_set(data* arr, int index, data data);
 data_access_result data_array_get(data* arr, int index);
-void data_array_free(data* arr);
+void data_free(data data);
+void data_array_free(data* arr, int size);

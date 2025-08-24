@@ -6,6 +6,12 @@ import sys
 subprocess.run("make")
 test_cases_amn = int(len(os.listdir("testing/files")) / 2)
 
+if "--create" in sys.argv:
+    open("testing/files/" + str(test_cases_amn) + "_code.txt", 'w')
+    with open("testing/files/" + str(test_cases_amn) + "_result.json", 'w') as file:
+        file.write('{\n\t"output": "",\n\t"return_code": "",\n\t"description": ""\n}')
+    sys.exit(0)
+
 for i in range(test_cases_amn):
     process = subprocess.run(f"./parse testing/files/{i}_code.txt", shell=True, capture_output=True, text=True)
     output = process.stdout
