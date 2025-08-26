@@ -1,0 +1,55 @@
+number i = 0;
+number toggle = 0;
+
+number[5] a;
+number[10] b;
+number[3] c;
+
+while (i < 5) {
+    number[7] d;
+    number[4] e;
+
+    a = b;
+    b = c;
+    c = d;
+    d = e;
+
+    if (toggle == 0) {
+        number[6] f;
+        e = f;
+        a = f;
+        toggle = 1;
+    } else {
+        number[8] g;
+        b = g;
+        c = g;
+        toggle = 0;
+    }
+
+    i = i + 1;
+}
+
+number j = 0;
+
+while (j < 3) {
+    number[2] x;
+    number[9] y;
+    number[4] d;
+    number[5] e;
+
+    x = y;
+    y = a;
+    a = x;
+
+    if (j == 1) {
+        number[12] z;
+        b = z;
+        c = z;
+    } else {
+        number[15] w;
+        d = w;
+        e = w;
+    }
+
+    j = j + 1;
+}

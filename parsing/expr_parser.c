@@ -36,13 +36,13 @@ static parse_result_expr parse_parens(char *str);
 
 void free_expr(expr *e)
 {
-    if (e == NULL)
-        return;
+    if (e == NULL) return;
 
     if (e->variable != NULL) free(e->variable);
 
     free_expr(e->expr_1);
     free_expr(e->expr_2);
+
     free(e);
 }
 

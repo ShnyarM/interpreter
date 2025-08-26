@@ -44,6 +44,7 @@ void free_stmt(stmt* s){
     if(s->variable != NULL) free(s->variable);
 
     free_expr(s->expression);
+    free_expr(s->expression_2);
     free_stmt(s->inner_stmt_1);
     free_stmt(s->inner_stmt_2);
     free_stmt(s->next_statement);
@@ -112,6 +113,7 @@ stmt* get_plain_statement(s_type type){
     statement->type = type;
     statement->variable = NULL;
     statement->expression = NULL;
+    statement->expression_2 = NULL;
     statement->next_statement = NULL;
     statement->inner_stmt_1 = NULL;
     statement->inner_stmt_2 = NULL;

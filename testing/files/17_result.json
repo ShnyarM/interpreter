@@ -1,0 +1,5 @@
+{
+	"output": "",
+	"return_code": "0",
+	"description": "Stress test for arrays, mainly for detecting memory leaks"
+}

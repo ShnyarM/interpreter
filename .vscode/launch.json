@@ -9,7 +9,7 @@
             "type": "cppdbg",        // Specifies that this is for C++
             "request": "launch",     // Launch the program
             "program": "${workspaceFolder}/parse_dbg",  // Path to your compiled executable
-            "args": ["p2.txt"],              // Arguments to pass to your program
+            "args": ["p2.t"],              // Arguments to pass to your program
             "stopAtEntry": false,    // Whether to stop at the entry point of the program
             "cwd": "${workspaceFolder}",  // Current working directory
             "environment": [],       // Environment variables

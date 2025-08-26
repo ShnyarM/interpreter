@@ -74,4 +74,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TODO: free arrays after use, add test cases for arrays, make shared array structure to keep track of pointers pointed to array
+//TODO:

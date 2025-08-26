@@ -87,10 +87,8 @@ data_update_result dict_update(dictionary* dict, char* name, data data){
     dict_entry* entry = dict_get_entry(dict, name);
 
     if(entry != NULL){
-        if(!IS_SAME_TYPE(data, entry->data)) return (data_update_result){FALSE, DifferentType};
-
-        entry->data = data;
-        return (data_update_result){TRUE, NoFailure};
+        data_update_result result = data_update_value(&entry->data, data);
+        return result;
     }
 
     //search in child dictionary

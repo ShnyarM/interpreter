@@ -197,11 +197,11 @@ void print_data(data d, BOOL new_line){
 
         int size = d.size;
         for(int i = 0; i < size-1; i++){
-            print_data(d.value.arr[i], FALSE);
+            print_data(data_array_get(d.value.arr, i).result, FALSE);
             printf(", ");
         }
 
-        print_data(d.value.arr[size-1], FALSE);
+        print_data(data_array_get(d.value.arr, size-1).result, FALSE);
         printf("]");
     }else{
         printf("%.15g", GET_NUMBER_FROM_DATA(d));
@@ -290,7 +290,7 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
             return exec;
         }
 
-        data* array_ptr = data_array_new(size, statement->data_type); 
+        data_array* array_ptr = data_array_new(size, statement->data_type); 
         data data_array = NUMBER_ARRAY_DATA(array_ptr, size);
         BOOL result = dict_add(dict, statement->variable, data_array);
 
