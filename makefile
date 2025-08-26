@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall
 
-OBJS = main.o helper.o dictionary.o data.o executor.o _parser_helper.o expr_parser.o stmt_parser.o
+OBJS = main.o helper.o dictionary.o data.o executor.o _parser_helper.o expr_parser.o stmt_parser.o function_parser.o
 
 parse: $(OBJS)
 	$(CC) $(CFLAGS) -o parse $(OBJS)
@@ -10,7 +10,7 @@ parse_dbg: CFLAGS = -Wall -O0 -g
 parse_dbg: $(OBJS)
 	$(CC) $(CFLAGS) -g -o parse_dbg $(OBJS)
 
-main.o: main.c helper.h parsing/stmt_parser.h dictionary.h types.h
+main.o: main.c helper.h parsing/stmt_parser.h parsing/expr_parser.h parsing/function_parser.h dictionary.h types.h
 	$(CC) $(CFLAGS) -c main.c
 
 helper.o: helper.c helper.h
@@ -33,6 +33,9 @@ expr_parser.o: parsing/expr_parser.c parsing/expr_parser.h parsing/_parser_helpe
 
 stmt_parser.o: parsing/stmt_parser.c parsing/stmt_parser.h parsing/expr_parser.h parsing/_parser_helper.h helper.h types.h data.h
 	$(CC) $(CFLAGS) -c parsing/stmt_parser.c
+
+function_parser.o: parsing/function_parser.c parsing/function_parser.h parsing/stmt_parser.h parsing/expr_parser.h parsing/_parser_helper.h helper.h types.h data.h
+	$(CC) $(CFLAGS) -c parsing/function_parser.c
 
 clean:
 	rm -f *~ *.o parse parse_dbg

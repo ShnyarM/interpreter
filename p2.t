@@ -1,9 +1,14 @@
-number[5] arr1;
+function recursive(){
+    number i = 55;
+    print(i);
 
-if(1){
-    number[5] arr2;
-    arr2[3] = 5;
-    arr1 = arr2;
+    print(k);
+    k=k+1;
+    if(k < 100){
+        recursive();
+    }
 }
 
-print(arr1);
+number k=0;
+recursive();
+print(k+100);

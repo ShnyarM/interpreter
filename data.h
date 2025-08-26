@@ -7,6 +7,7 @@
 #define NUMBER_ATOMIC_DATA_TYPE ((data_type){Number, FALSE})
 #define NUMBER_ARRAY_DATA_TYPE ((data_type){Number, TRUE})
 #define INVALID_DATA_TYPE ((data_type){None, FALSE})
+#define FUNCTION_DATA_TYPE ((data_type){Function, FALSE})
 
 #define IS_ARRAY(d) (d.type.is_array)
 #define IS_ATOMIC_NUM_TYPE(d) (d.type.atomic_type == Number && d.type.is_array == FALSE)
@@ -17,6 +18,7 @@
 #define EMPTY_DATA ((data){INVALID_DATA_TYPE, {NULL}, 0})
 #define NUMBER_DATA(v) ((data){NUMBER_ATOMIC_DATA_TYPE, (data_value){.number=v}, 1})
 #define NUMBER_ARRAY_DATA(ptr, s) ((data){NUMBER_ARRAY_DATA_TYPE, (data_value){.arr=ptr}, s}) // Takes in ptr to array and size
+#define FUNCTION_DATA(ptr) ((data){FUNCTION_DATA_TYPE, (data_value){.function=ptr}, 0})
 
 // Data extraction
 #define GET_NUMBER_FROM_DATA(d) (d.value.number)
@@ -32,7 +34,7 @@ struct data_t;
 struct data_array_t;
 
 // Variable / Data types
-typedef enum atomic_d_type_e {None, Any, Number} atomic_data_type;
+typedef enum atomic_d_type_e {None, Any, Number, Function} atomic_data_type;
 
 typedef struct data_type_t {
     atomic_data_type atomic_type;
@@ -41,6 +43,7 @@ typedef struct data_type_t {
 
 typedef union data_value_u {
     struct data_array_t* arr;
+    struct function_t* function;
     double number;
 } data_value;
 

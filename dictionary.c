@@ -100,26 +100,6 @@ data_update_result dict_update(dictionary* dict, char* name, data data){
     return (data_update_result){FALSE, NotInitialized};
 }
 
-// Returns a pointer to the data storage of the variable
-// Allows direct access to data for manipulating arrays
-// Returns NULL if variable doesnt exist
-/*data* dict_get_data_ref(dictionary* dict, char* name){
-    if(!dict_valid(dict)) return FALSE;
-
-    dict_entry* entry = dict_get_entry(dict, name);
-    if(entry != NULL){
-        return &(entry->data);
-    }
-
-    //search in child dictionary
-    if(dict->child != NULL){
-        BOOL result = dict_get_data_ref(dict->child, name);
-        return result;
-    }
-
-    return NULL;
-}*/
-
 data_access_result dict_get(dictionary* dict, char* name){
     if(!dict_valid(dict)){
         return INVALID_DATA_ACCESS_RESULT;

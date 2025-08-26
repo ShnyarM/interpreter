@@ -8,6 +8,9 @@
 
 char EXEC_ERROR_MESSAGE[EXEC_ERROR_MESSAGE_LENGTH];
 
+extern dictionary GLOBAL_DICTIONARY;
+extern program RUNNING_PROGRAM;
+
 void write_exec_error(char* message, size_t line){
     if(*message == 0) return;
 
@@ -304,6 +307,18 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
 
     if(statement->type == Print){
         print_data(inner_expression.data, TRUE);
+    }
+
+    if(statement->type == Function_Call){
+        data_access_result function_data = dict_get(&RUNNING_PROGRAM.functions, statement->variable);
+        if(!function_data.valid){
+            write_exec_error("Function has not been defined", statement->line);
+            exec.succesful = FALSE;
+            return exec;
+        }
+
+        dictionary function_dict = dict_get_extension(&GLOBAL_DICTIONARY);
+        exec = run_program(function_data.result.value.function->content, &function_dict);
     }
 
     if(statement->type == If){

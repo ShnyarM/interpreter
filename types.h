@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "helper.h"
 #include "data.h"
+#include "dictionary.h"
 
 // Expressions
 typedef enum expr_type {Lit, Add, Sub, Mul, Div, Neg, Var, Arr_Access, Bool_Neg, Eq, Lt, Lte} e_type;
@@ -19,7 +20,7 @@ typedef struct expression_t{
 
 
 // Statements
-typedef enum statement_type {Ass, Arr_Ass, Var_Init, Arr_Init, Print, If, While, Block, Brk, Stop} s_type;
+typedef enum statement_type {Ass, Arr_Ass, Var_Init, Arr_Init, Print, If, While, Block, Brk, Stop, Function_Call} s_type;
 
 typedef struct statement_t{
     s_type type;
@@ -33,3 +34,17 @@ typedef struct statement_t{
     struct statement_t* inner_stmt_1; //Used for if true branch, while and block
     struct statement_t* inner_stmt_2; //used for if false branch (else path)$
 } stmt;
+
+// Functions
+typedef struct function_t{
+    char* name;
+    stmt* content;
+    data_type return_type;
+} function;
+
+// Program
+typedef struct program_t{
+    BOOL valid;
+    stmt* first_statement;
+    dictionary functions;
+} program;

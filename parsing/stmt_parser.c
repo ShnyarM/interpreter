@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include "stmt_parser.h"
 #include "expr_parser.h"
+#include "function_parser.h"
 #include "_parser_helper.h"
 
 extern size_t LINE_COUNTER;
@@ -35,8 +36,8 @@ static parse_result_stmt parse_assignment(char* str);
 static parse_result_stmt parse_if(char* str);
 static parse_result_stmt parse_while(char* str);
 static parse_result_stmt parse_print(char* str);
-static parse_result_stmt parse_statement(char* str);
-static parse_result_stmt parse_multiple_statements(char* str);
+parse_result_stmt parse_statement(char* str);
+parse_result_stmt parse_multiple_statements(char* str);
 
 void free_stmt(stmt* s){
     if(s == NULL) return;
@@ -352,6 +353,33 @@ static parse_result_stmt parse_print(char* str){
     return PARSE_RESULT_STMT(statement, last);
 }
 
+static parse_result_stmt parse_statement_function_call(char* str){
+    PARSE_INIT
+
+    parse_result_expr variable = parse_variable(str);
+    // FATAL check gets skipped here, as it will falsely flag number declarations as keyword violations
+    // TO DO: maybe do keyword violation check only in clear variable inits
+    if(!variable.valid || variable.fatal) REVERT
+
+    char* opening_bracket = char_follows(variable.remaining, '(', FALSE);
+    if(opening_bracket == NULL){
+        free_expr(variable.expression);
+        REVERT
+    }
+
+    char* closing_bracket = char_follows(opening_bracket, ')', FALSE);
+    FATAL_CHECK_NULL_WITH_FREE_EXPR(closing_bracket, CLOSING_BRACKET_ERROR, variable.expression);
+
+    char* semi_colon = char_follows(closing_bracket, ';', FALSE);
+    FATAL_CHECK_NULL_WITH_FREE_EXPR(semi_colon, SEMICOLON_ERROR, variable.expression);
+
+    stmt* stmt = get_plain_statement(Function_Call);
+    stmt->variable = copy_of_string(variable.expression->variable);
+    
+    free_expr(variable.expression);
+    return PARSE_RESULT_STMT(stmt, semi_colon);
+}
+
 static parse_result_stmt parse_block(char* str){
     PARSE_INIT
 
@@ -369,8 +397,10 @@ static parse_result_stmt parse_block(char* str){
     return PARSE_RESULT_STMT(final_statement, curly_bracket_close);
 }
 
-static parse_result_stmt parse_statement(char* str){
+parse_result_stmt parse_statement(char* str){
     PARSE_INIT
+
+    if(word_follows(str, "function", TRUE)) REVERT
 
     parse_result_stmt if_statement = parse_if(str);
     FATAL_CHECK(if_statement)
@@ -383,6 +413,10 @@ static parse_result_stmt parse_statement(char* str){
     parse_result_stmt print = parse_print(str);
     FATAL_CHECK(print)
     if(print.valid) return print;
+
+    parse_result_stmt function_call = parse_statement_function_call(str);
+    FATAL_CHECK(function_call)
+    if(function_call.valid) return function_call;
 
     parse_result_stmt block = parse_block(str);
     FATAL_CHECK(block)
@@ -415,7 +449,7 @@ static parse_result_stmt parse_statement(char* str){
     REVERT //Can maybe remove
 }
 
-static parse_result_stmt parse_multiple_statements(char* str){
+parse_result_stmt parse_multiple_statements(char* str){
     PARSE_INIT
 
     parse_result_stmt statement = parse_statement(str);
@@ -445,21 +479,4 @@ static parse_result_stmt parse_multiple_statements(char* str){
     statement.remaining = remaining;
 
     return statement;
-}
-
-parse_result_stmt parse_program(char* str){
-    // No parse init here
-
-    parse_result_stmt statements = parse_multiple_statements(str);
-    FATAL_CHECK(statements)
-    if(!statements.valid) FATAL_REVERT("Invalid program.");
-
-    // check if nothing else at end
-    remove_spaces(&statements.remaining);
-    if(*statements.remaining != 0){
-        free_stmt(statements.statement);
-        FATAL_REVERT("Unknown symbol.")
-    }
-
-    return statements;
 }

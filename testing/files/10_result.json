@@ -1,5 +1,5 @@
 {
-    "output": "Error during parsing on line 13: Unknown symbol.",
+    "output": "Error during parsing on line 13: Unknown symbol at end of file.",
     "return_code": "1",
     "description": "Unknown symbol at end of file."
 }

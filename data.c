@@ -62,6 +62,10 @@ void data_free(data data){
     if(data.type.is_array){
         data_array_remove_reference(data.value.arr);
     }
+
+    if(data.type.atomic_type == Function){
+        // TO DO: add free_function function
+    }
 }
 
 void data_array_free(data_array* arr){

@@ -3,10 +3,15 @@
 #include <string.h>
 #include "helper.h"
 #include "parsing/stmt_parser.h"
+#include "parsing/expr_parser.h"
+#include "parsing/function_parser.h"
+#include "parsing/_parser_helper.h"
 #include "executing/executor.h"
 #include "dictionary.h"
 
 size_t MAX_VARIABLE_LENGTH = 50;
+program RUNNING_PROGRAM;
+dictionary GLOBAL_DICTIONARY;
 
 extern char EXEC_ERROR_MESSAGE[];
 extern char PARSE_ERROR_MESSAGE[];
@@ -18,16 +23,19 @@ extern char PARSE_ERROR_MESSAGE[];
 // <parens> ::= '(' <expression> ')'
 // <var_or_array> ::== <variable> [ '[' <expression> ']' ]
 // <variable> ::== ('_' | <letter>)('_' | <letter> | <digit>)*
+// <type> ::== <atomic_type> | <type>'[]'
+// <atomic_type> ::== 'number' | 'any'
 
+// <function_call> ::== <variable>'()'
 
-
-// <program> ::= <multiple_statements>
+// <program> ::= (<statement> | <function>)*
+// <function> ::= 'function ' <variable> '()' ':' <type> '{' <multiple statements> '}'
 // <multiple_statements> ::= <statement> (<statement>)*
-// <statement> ::== <initialization> | <assignment> | <if> | <while> | <print> | <block> | 'break;' | 'stop;'
+// <statement> ::== <function_call>';' | <initialization> | <assignment> | <if> | <while> | <print> | <block> | 'break;' | 'stop;'
 
-// <initialization> ::== <var_init> | <array_init>
-// <var_init> ::== 'int' <variable> ['=' <expression>]';'
-// <array_init> ::== 'int['<expression>']' <variable>';'
+// <initialization> ::== <var_init> | <array_init>';'
+// <var_init> ::== <atomic_type> <variable> ['=' <expression>]';'
+// <array_init> ::== '<atomic_type>['<expression>']' <variable>';'
 // <assignment> ::== <var_or_array> '=' <expression>';'
 
 // <if> ::== 'if (' <expression> ')' <statement> ['else' <statement>]
@@ -35,19 +43,94 @@ extern char PARSE_ERROR_MESSAGE[];
 // <print> ::== 'print(' <expression> ')'';'
 // <block> ::=  '{' <multiple_statements> '}'
 
+program parse_program(char* str){
+    // No parse init here
+
+    program prog;
+    prog.first_statement = NULL;
+    prog.functions = dict_new();
+    prog.valid = TRUE;
+
+    stmt* first_statement = NULL;
+    stmt* last_statement = NULL;
+    char* remaining = str;
+
+    BOOL fatal = FALSE;
+
+    while(TRUE){
+        parse_result_stmt statement = parse_statement(remaining);
+        if(statement.fatal){
+            fatal = TRUE;
+            break;
+        }
+        if(statement.valid){
+            if(first_statement == NULL){
+                first_statement = statement.statement;
+                last_statement = statement.statement;
+            }else{
+                last_statement->next_statement = statement.statement;
+                last_statement = last_statement->next_statement;
+            }
+            remaining = statement.remaining;
+            continue;
+        }
+
+        parse_result_function function = parse_function(remaining);
+        if(function.fatal){
+            fatal = TRUE;
+            break;
+        }
+        if(function.valid){
+            // create data block which encapsules function
+            data func = FUNCTION_DATA(function.function);
+            BOOL result = dict_add(&prog.functions, function.function->name, func);
+
+            if(!result){
+                fatal = TRUE;
+                write_parse_error("Duplicate function names are not allowed.");
+                free_function(function.function);
+            }
+
+            remaining = function.remaining;
+            continue;
+        }
+
+        break; //No statement or function could be found
+    }
+
+    // check if nothing else at end
+    remove_spaces(&remaining);
+    if(!fatal && *remaining != 0){
+        fatal = TRUE;
+        write_parse_error("Unknown symbol at end of file.");
+    }
+
+    if(fatal){
+        dict_free(&prog.functions);
+        free_stmt(first_statement);
+        prog.valid = FALSE;
+        return prog;
+    }
+
+    prog.first_statement = first_statement;
+    return prog;
+}
+
 int execute_program(char* str){
-    parse_result_stmt program = parse_program(str);
+    program program = parse_program(str);
     if(!program.valid){
         printf("%s\n", PARSE_ERROR_MESSAGE);
         return 1;
     }
 
-    dictionary dict = dict_new();
+    GLOBAL_DICTIONARY = dict_new();
+    RUNNING_PROGRAM = program;
 
-    execution_result exec = run_program(program.statement, &dict);
+    execution_result exec = run_program(program.first_statement, &GLOBAL_DICTIONARY);
 
-    dict_free(&dict);
-    free_stmt(program.statement);
+    dict_free(&GLOBAL_DICTIONARY);
+    free_stmt(program.first_statement);
+    dict_free(&program.functions);
 
     if(!exec.succesful){
         printf("There was an error while running the script. Error:\n%s\n", EXEC_ERROR_MESSAGE);
@@ -74,4 +157,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TODO:
+//TODO: first arguments for function calls, then return values for function calls, after that clean up type system (proper support for multi dimensional arrays)

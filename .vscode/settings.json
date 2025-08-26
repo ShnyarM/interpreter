@@ -21,6 +21,8 @@
         "compare": "c",
         "data.h": "c",
         "array.h": "c",
-        "_parser_helper.h": "c"
+        "_parser_helper.h": "c",
+        "executor.h": "c",
+        "stdint.h": "c"
     }
 }
