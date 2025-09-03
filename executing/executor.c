@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "executor.h"
-#include "../types.h"
+#include "../general_structs.h"
 #include "../dictionary.h"
 
 #define EXEC_ERROR_MESSAGE_LENGTH 100

@@ -1,25 +1,26 @@
-#include "types.h"
+#include "general_structs.h"
 #include "data.h"
 #include <stdio.h>
 
 data_update_result data_update_value(data* orig, data new_value){
-    if(!IS_SAME_TYPE((*orig), new_value)) return (data_update_result){FALSE, DifferentType};
+    if(!type_equality(orig->type, new_value.type)) return (data_update_result){FALSE, DifferentType};
     // Check if new_value or old value is array, to properly add and remove references
-    if(new_value.type.is_array) data_array_add_reference(new_value.value.arr);
-    if(orig->type.is_array) data_array_remove_reference(orig->value.arr);
+    if(new_value.type->kind == Array) data_array_add_reference(new_value.value.arr);
+    if(orig->type->kind == Array) data_array_remove_reference(orig->value.arr);
 
     *orig = new_value;
 
     return (data_update_result){TRUE, NoFailure};
 }
 
-data_array* data_array_new(int size, data_type type){
+// Ownership of type gets transferred
+data_array* data_array_new(int size, data_type* type){
     if(size <= 0) return NULL;
 
     data* ptr = (data*)malloc(sizeof(data)*size);
     
     for(int i = 0; i < size; i++){
-        ptr[i].type = type;
+        ptr[i].type = copy_of_type(type);
         ptr[i].value.number = 0;
     }
 
@@ -54,21 +55,23 @@ void data_array_add_reference(data_array* arr){
 void data_array_remove_reference(data_array* arr){
     arr->references--;
     if(arr->references <= 0){
-        data_array_free(arr);
+        free_data_array(arr);
     }
 }
 
-void data_free(data data){
-    if(data.type.is_array){
+void free_data(data data){
+    if(data.type->kind == Array){
         data_array_remove_reference(data.value.arr);
     }
 
-    if(data.type.atomic_type == Function){
+    if(data.type->kind == Function){
         // TO DO: add free_function function
     }
+
+    free_type(data.type);
 }
 
-void data_array_free(data_array* arr){
+void free_data_array(data_array* arr){
     for(int i = 0; i < arr->size; i++){
         data_free(arr->list[i]);
     } 

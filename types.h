@@ -1,50 +1,15 @@
 #pragma once
 
-#include <stdint.h>
-#include <stdlib.h>
-#include "helper.h"
-#include "data.h"
-#include "dictionary.h"
+typedef enum atomic_d_type_e {None, Any, Number} atomic_data_type;
+typedef enum d_type_kind_e {None, Atomic, Array, Function} data_type_kind;
 
-// Expressions
-typedef enum expr_type {Lit, Add, Sub, Mul, Div, Neg, Var, Arr_Access, Bool_Neg, Eq, Lt, Lte} e_type;
+typedef struct data_type_t {
+    data_type_kind kind;
+    atomic_data_type atomic_type;
+    struct data_type_t* inner_type;
+} data_type;
 
-typedef struct expression_t{
-    e_type type;
-    data data;                          // Value if it is literal
-    char* variable;                   // Name if it is variable
-    struct expression_t *expr_1;
-    struct expression_t *expr_2;
-    size_t line;                      // line at which this expression appears
-} expr;
-
-
-// Statements
-typedef enum statement_type {Ass, Arr_Ass, Var_Init, Arr_Init, Print, If, While, Block, Brk, Stop, Function_Call} s_type;
-
-typedef struct statement_t{
-    s_type type;
-    char* variable;
-    expr* expression;
-    expr* expression_2;               // used for array assignments to store index
-    struct statement_t* next_statement;
-    size_t line;                      // line at which this expression appears
-    data_type data_type;              // for variable initialization statements, store the type of the variable
-
-    struct statement_t* inner_stmt_1; //Used for if true branch, while and block
-    struct statement_t* inner_stmt_2; //used for if false branch (else path)$
-} stmt;
-
-// Functions
-typedef struct function_t{
-    char* name;
-    stmt* content;
-    data_type return_type;
-} function;
-
-// Program
-typedef struct program_t{
-    BOOL valid;
-    stmt* first_statement;
-    dictionary functions;
-} program;
+void free_type(data_type* t);
+data_type* get_atomic_number_type();
+data_type* copy_of_type(data_type* t);
+BOOL type_equality(data_type* t1, data_type* t2);

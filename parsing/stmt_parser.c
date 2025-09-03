@@ -119,6 +119,7 @@ stmt* get_plain_statement(s_type type){
     statement->inner_stmt_1 = NULL;
     statement->inner_stmt_2 = NULL;
     statement->line = LINE_COUNTER;
+    statement->data_type = NULL;
     return statement;
 }
 

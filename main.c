@@ -23,7 +23,7 @@ extern char PARSE_ERROR_MESSAGE[];
 // <parens> ::= '(' <expression> ')'
 // <var_or_array> ::== <variable> [ '[' <expression> ']' ]
 // <variable> ::== ('_' | <letter>)('_' | <letter> | <digit>)*
-// <type> ::== <atomic_type> | <type>'[]'
+// <type> ::== <atomic_type>('[]')*
 // <atomic_type> ::== 'number' | 'any'
 
 // <function_call> ::== <variable>'()'

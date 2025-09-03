@@ -5,7 +5,7 @@
         "cstdlib": "c",
         "stmt_parser.h": "c",
         "helper.h": "c",
-        "types.h": "c",
+        "general_structs.h": "c",
         "expr_parser.h": "c",
         "dictionary.h": "c",
         "optional": "c",

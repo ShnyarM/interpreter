@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include "_parser_helper.h"
 #include "../helper.h"
-#include "../types.h"
+#include "../general_structs.h"
 
 #define PARSE_ERROR_MESSAGE_LENGTH 100
 

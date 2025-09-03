@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../helper.h"
-#include "../types.h"
+#include "../general_structs.h"
 #include "../dictionary.h"
 
 typedef struct execution_result_t{

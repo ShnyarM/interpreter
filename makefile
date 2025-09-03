@@ -10,7 +10,7 @@ parse_dbg: CFLAGS = -Wall -O0 -g
 parse_dbg: $(OBJS)
 	$(CC) $(CFLAGS) -g -o parse_dbg $(OBJS)
 
-main.o: main.c helper.h parsing/stmt_parser.h parsing/expr_parser.h parsing/function_parser.h dictionary.h types.h
+main.o: main.c helper.h parsing/stmt_parser.h parsing/expr_parser.h parsing/function_parser.h dictionary.h general_structs.h
 	$(CC) $(CFLAGS) -c main.c
 
 helper.o: helper.c helper.h
@@ -19,22 +19,22 @@ helper.o: helper.c helper.h
 dictionary.o: dictionary.c helper.h dictionary.h data.h
 	$(CC) $(CFLAGS) -c dictionary.c
 
-data.o: data.c helper.h types.h data.h
+data.o: data.c helper.h general_structs.h data.h
 	$(CC) $(CFLAGS) -c data.c
 
-executor.o: executing/executor.c executing/executor.h helper.h types.h dictionary.h data.h
+executor.o: executing/executor.c executing/executor.h helper.h general_structs.h dictionary.h data.h
 	$(CC) $(CFLAGS) -c executing/executor.c
 
-_parser_helper.o: parsing/_parser_helper.c parsing/_parser_helper.h helper.h types.h
+_parser_helper.o: parsing/_parser_helper.c parsing/_parser_helper.h helper.h general_structs.h
 	$(CC) $(CFLAGS) -c parsing/_parser_helper.c
 
-expr_parser.o: parsing/expr_parser.c parsing/expr_parser.h parsing/_parser_helper.h helper.h types.h data.h
+expr_parser.o: parsing/expr_parser.c parsing/expr_parser.h parsing/_parser_helper.h helper.h general_structs.h data.h
 	$(CC) $(CFLAGS) -c parsing/expr_parser.c
 
-stmt_parser.o: parsing/stmt_parser.c parsing/stmt_parser.h parsing/expr_parser.h parsing/_parser_helper.h helper.h types.h data.h
+stmt_parser.o: parsing/stmt_parser.c parsing/stmt_parser.h parsing/expr_parser.h parsing/_parser_helper.h helper.h general_structs.h data.h
 	$(CC) $(CFLAGS) -c parsing/stmt_parser.c
 
-function_parser.o: parsing/function_parser.c parsing/function_parser.h parsing/stmt_parser.h parsing/expr_parser.h parsing/_parser_helper.h helper.h types.h data.h
+function_parser.o: parsing/function_parser.c parsing/function_parser.h parsing/stmt_parser.h parsing/expr_parser.h parsing/_parser_helper.h helper.h general_structs.h data.h
 	$(CC) $(CFLAGS) -c parsing/function_parser.c
 
 clean:

@@ -1,5 +1,5 @@
 #include "../helper.h"
-#include "../types.h"
+#include "../general_structs.h"
 #include "expr_parser.h"
 #include "_parser_helper.h"
 

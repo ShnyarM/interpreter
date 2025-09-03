@@ -2,7 +2,7 @@
 
 #include "../helper.h"
 #include "expr_parser.h"
-#include "../types.h"
+#include "../general_structs.h"
 
 typedef struct parse_result_function_t{
     BOOL valid;
