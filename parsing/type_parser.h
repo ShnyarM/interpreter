@@ -1,5 +1,5 @@
 #pragma once
-#include "../types.h"
+#include "../structs/types.h"
 #include "../helper.h"
 
 
@@ -9,3 +9,5 @@ typedef struct parse_result_type_t{
     char* remaining;
     BOOL fatal;         //If this is true mistake in code was found, abort everything and give error
 } parse_result_type;
+
+parse_result_type parse_type(char* str);

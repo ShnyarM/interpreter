@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../helper.h"
-#include "../general_structs.h"
+#include "../structs/expression.h"
 
 typedef struct token_result_t{
     char token;

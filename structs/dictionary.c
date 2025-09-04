@@ -1,6 +1,4 @@
-#include <string.h>
 #include <stdlib.h>
-#include "helper.h"
 #include "dictionary.h"
 
 #define INIT_SIZE 1
@@ -42,9 +40,9 @@ static dict_entry* dict_get_entry(dictionary* dict, char* name){
     return NULL;
 }
 
-// adds variable to list if not present, returns ptr to entry if successful and returns NULL if already present
+// adds plain variable to list if not present, returns ptr to entry if successful and returns NULL if already present
 // does not check in child dictionary
-static dict_entry* dict_add_to_list(dictionary* dict, char* name, data data){ 
+static dict_entry* dict_add_to_list(dictionary* dict, char* name){ 
 
     //Create new dictionary if invalid
     if(!dict_valid(dict)){
@@ -60,7 +58,6 @@ static dict_entry* dict_add_to_list(dictionary* dict, char* name, data data){
 
     dict_entry* entry = dict->list+(dict->length);
     entry->name = copy_of_string(name);
-    entry->data = data;
 
     dict->length++;
 
@@ -69,12 +66,16 @@ static dict_entry* dict_add_to_list(dictionary* dict, char* name, data data){
 
 // adds to list if not present, returns TRUE if successful and returns FALSE if already present
 // does not check in child dictionary
-BOOL dict_add(dictionary* dict, char* name, data data){ 
+BOOL dict_add(dictionary* dict, char* name, data_type type){ 
 
-    dict_entry* entry = dict_add_to_list(dict, name, data);
+    dict_entry* entry = dict_add_to_list(dict, name);
     if(entry == NULL){
         return FALSE;
     }
+
+    entry->data.type = type;
+    if(is_type_number(type)) entry->data.value.number = 0;
+    if(is_type_array(type)) entry->data.value.arr = data_array_new(10, type.inner_type);
 
     return TRUE;
 }
@@ -101,20 +102,27 @@ data_update_result dict_update(dictionary* dict, char* name, data data){
 }
 
 data_access_result dict_get(dictionary* dict, char* name){
+    data* ref = dict_get_reference(dict, name);
+
+    if(ref == NULL) return INVALID_DATA_ACCESS_RESULT;
+    return (data_access_result){TRUE, *ref};
+}
+
+data* dict_get_reference(dictionary* dict, char* name){
     if(!dict_valid(dict)){
-        return INVALID_DATA_ACCESS_RESULT;
+        return NULL;
     }
 
     dict_entry* entry = dict_get_entry(dict, name);
-    if(entry != NULL) return (data_access_result){TRUE, entry->data};
+    if(entry != NULL) return &entry->data;
 
     //check in child dictionary
     if(dict->child != NULL){
-        data_access_result child_result = dict_get(dict->child, name);
-        if(child_result.valid) return child_result;
+        data* child_result = dict_get_reference(dict->child, name);
+        if(child_result != NULL) return child_result;
     }
     
-    return INVALID_DATA_ACCESS_RESULT;
+    return NULL;
 }
 
 static void dict_increase_capacity(dictionary* dict){

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../helper.h"
-#include "../general_structs.h"
 
 typedef struct parse_result_expr_t{
     BOOL valid;
@@ -12,6 +11,5 @@ typedef struct parse_result_expr_t{
 
 expr* get_number_literal(double value);
 parse_result_expr parse_expr(char* str);
-parse_result_expr parse_variable(char* str);
-parse_result_expr parse_var_or_array(char* str);
-void free_expr(expr* e);
+parse_result_expr parse_variable_name(char* str);
+parse_result_expr parse_variable_access(char* str);

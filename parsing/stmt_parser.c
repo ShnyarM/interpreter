@@ -1,8 +1,14 @@
-#include <stdlib.h>
+/*#include <stdlib.h>
 #include "stmt_parser.h"
 #include "expr_parser.h"
 #include "function_parser.h"
-#include "_parser_helper.h"
+#include "_parser_helper.h"*/
+
+#include "stmt_parser.h"
+#include "expr_parser.h"
+#include "type_parser.h"
+#include "../structs/statement.h"
+#include "../structs/expression.h"
 
 extern size_t LINE_COUNTER;
 
@@ -31,7 +37,6 @@ extern char OPENING_SQUARE_BRACKET_ERROR[];
 extern char CLOSING_SQUARE_BRACKET_ERROR[];
 extern char SEMICOLON_ERROR[];
 
-stmt* get_plain_statement(s_type type);
 static parse_result_stmt parse_assignment(char* str);
 static parse_result_stmt parse_if(char* str);
 static parse_result_stmt parse_while(char* str);
@@ -39,94 +44,11 @@ static parse_result_stmt parse_print(char* str);
 parse_result_stmt parse_statement(char* str);
 parse_result_stmt parse_multiple_statements(char* str);
 
-void free_stmt(stmt* s){
-    if(s == NULL) return;
-
-    if(s->variable != NULL) free(s->variable);
-
-    free_expr(s->expression);
-    free_expr(s->expression_2);
-    free_stmt(s->inner_stmt_1);
-    free_stmt(s->inner_stmt_2);
-    free_stmt(s->next_statement);
-
-    free(s);
-}
-
-stmt* get_ass_statement(char* variable, expr* expr, stmt* next_statement){
-    stmt* statement = get_plain_statement(Ass);
-    statement->variable = copy_of_string(variable);
-    statement->expression = expr;
-    statement->next_statement = next_statement;
-    return statement;
-}
-
-stmt* get_arr_init_statement(char* variable, expr* size, data_type type, stmt* next_statement){
-    stmt* statement = get_plain_statement(Arr_Init);
-    statement->variable = copy_of_string(variable);
-    statement->expression = size;
-    statement->data_type = type;
-    statement->next_statement = next_statement;
-    return statement;
-}
-
-stmt* get_var_init_statement(char* variable, expr* value, stmt* next_statement){
-    stmt* statement = get_plain_statement(Var_Init);
-    statement->variable = copy_of_string(variable);
-    statement->expression = value;
-    statement->next_statement = next_statement;
-    return statement;
-}
-
-stmt* get_if_statement(expr* condition, stmt* true_branch, stmt* false_branch, stmt* next_statement){
-    stmt* statement = get_plain_statement(If);
-    statement->expression = condition;
-    statement->next_statement = next_statement;
-    statement->inner_stmt_1 = true_branch;
-    statement->inner_stmt_2 = false_branch;
-    return statement;
-}
-
-stmt* get_while_statement(expr* condition, stmt* true_branch, stmt* next_statement){
-    stmt* statement = get_plain_statement(While);
-    statement->expression = condition;
-    statement->next_statement = next_statement;
-    statement->inner_stmt_1 = true_branch;
-    return statement;
-}
-
-stmt* get_print_statement(expr* expression, stmt* next_statement){
-    stmt* statement = get_plain_statement(Print);
-    statement->expression = expression;
-    statement->next_statement = next_statement;
-    return statement;
-}
-
-stmt* get_block_statement(stmt* inside, stmt* next_statement){
-    stmt* statement = get_plain_statement(Block);
-    statement->inner_stmt_1 = inside;
-    statement->next_statement = next_statement;
-    return statement;
-}
-
-stmt* get_plain_statement(s_type type){
-    stmt* statement = (stmt*)malloc(sizeof(stmt));
-    statement->type = type;
-    statement->variable = NULL;
-    statement->expression = NULL;
-    statement->expression_2 = NULL;
-    statement->next_statement = NULL;
-    statement->inner_stmt_1 = NULL;
-    statement->inner_stmt_2 = NULL;
-    statement->line = LINE_COUNTER;
-    statement->data_type = NULL;
-    return statement;
-}
 
 static parse_result_stmt parse_assignment(char* str){
     PARSE_INIT
 
-    parse_result_expr variable = parse_var_or_array(str);
+    parse_result_expr variable = parse_variable_access(str);
     FATAL_CHECK(variable)
     if(!variable.valid) REVERT
 
@@ -149,25 +71,18 @@ static parse_result_stmt parse_assignment(char* str){
 
     stmt* statement = get_ass_statement(variable.expression->variable, expression.expression, NULL);
 
-    //If variable being assigned is array element, change to array assignment
-    if(variable.expression->type == Arr_Access){
-        statement->type = Arr_Ass;
-        statement->expression_2 = variable.expression->expr_1; //Index value
-
-        variable.expression->expr_1 = NULL; //remove reference to expression, so it doesnt get free when freeing variable
-    }
-
     free_expr(variable.expression); //Free expression as we dont need it, only needed variable name
     return PARSE_RESULT_STMT(statement, last);
 }
 
-static parse_result_stmt parse_var_init(char* str){
+static parse_result_stmt parse_initialization(char* str){
     PARSE_INIT
 
-    char* int_keyword = word_follows(str, "number", TRUE);
-    if(int_keyword == NULL) REVERT
+    parse_result_type type = parse_type(str);
+    FATAL_CHECK(type)
+    if(!type.valid) REVERT
 
-    parse_result_expr variable = parse_variable(int_keyword);
+    parse_result_expr variable = parse_variable_name(type.remaining);
     FATAL_CHECK(variable)
     if(!variable.valid) FATAL_REVERT("Expected variable name after initialization keyword.")
 
@@ -177,7 +92,7 @@ static parse_result_stmt parse_var_init(char* str){
         char* semicolon = char_follows(variable.remaining, ';', FALSE);
         FATAL_CHECK_NULL_WITH_FREE_EXPR(semicolon, SEMICOLON_ERROR, variable.expression)
 
-        stmt* statement = get_var_init_statement(variable.expression->variable, get_number_literal(0), NULL);
+        stmt* statement = stmt_get_init_stmt(variable.expression->variable, NULL, NULL);
         free_expr(variable.expression);
         return PARSE_RESULT_STMT(statement, semicolon);
     }
@@ -196,60 +111,10 @@ static parse_result_stmt parse_var_init(char* str){
         FATAL_REVERT(SEMICOLON_ERROR)
     }
 
-    stmt* statement = get_var_init_statement(variable.expression->variable, expression.expression, NULL);
+    stmt* statement = stmt_get_init_stmt(variable.expression->variable, expression.expression, NULL);
 
     free_expr(variable.expression);
     return PARSE_RESULT_STMT(statement, semicolon);
-}
-
-static parse_result_stmt parse_arr_init(char* str){
-    PARSE_INIT
-
-    char* number_keyword = word_follows(str, "number", FALSE);
-    if(number_keyword == NULL) REVERT
-
-    char* open_square_brackets = char_follows(number_keyword, '[', FALSE);
-    if(open_square_brackets == NULL) REVERT
-
-    parse_result_expr size = parse_expr(open_square_brackets);
-    FATAL_CHECK(size)
-    if(!size.valid) FATAL_REVERT("Expected size of array being initialized.")
-
-    char* close_square_brackets = char_follows(size.remaining, ']', FALSE);
-    FATAL_CHECK_NULL_WITH_FREE_EXPR(close_square_brackets, CLOSING_SQUARE_BRACKET_ERROR, size.expression)
-
-    parse_result_expr variable = parse_variable(close_square_brackets);
-    FATAL_CHECK(variable)
-    if(!variable.valid) FATAL_REVERT("Expected variable name after array initialization.")
-
-    char* semicolon = char_follows(variable.remaining, ';', FALSE);
-    if(semicolon == NULL){
-        free_expr(size.expression);
-        free_expr(variable.expression);
-        if(char_follows(variable.remaining, '=', FALSE)){
-            FATAL_REVERT("Arrays initializations can't have assignments.")
-        }
-        FATAL_REVERT(SEMICOLON_ERROR)
-    }
-
-    data_type type = NUMBER_ATOMIC_DATA_TYPE; // denotes the type of the values inside the array
-    stmt* statement = get_arr_init_statement(variable.expression->variable, size.expression, type, NULL);
-    free_expr(variable.expression);
-    return PARSE_RESULT_STMT(statement, semicolon);
-}
-
-static parse_result_stmt parse_initialization(char* str){
-    PARSE_INIT
-
-    parse_result_stmt arr_init = parse_arr_init(str);
-    FATAL_CHECK(arr_init)
-    if(arr_init.valid) return arr_init;
-
-    parse_result_stmt var_init = parse_var_init(str);
-    FATAL_CHECK(var_init)
-    if(var_init.valid) return var_init;
-
-    REVERT
 }
 
 static parse_result_stmt parse_else(char* str){
@@ -357,7 +222,7 @@ static parse_result_stmt parse_print(char* str){
 static parse_result_stmt parse_statement_function_call(char* str){
     PARSE_INIT
 
-    parse_result_expr variable = parse_variable(str);
+    parse_result_expr variable = parse_variable_name(str);
     // FATAL check gets skipped here, as it will falsely flag number declarations as keyword violations
     // TO DO: maybe do keyword violation check only in clear variable inits
     if(!variable.valid || variable.fatal) REVERT

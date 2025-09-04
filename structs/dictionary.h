@@ -1,6 +1,5 @@
 #pragma once
 
-#include "helper.h"
 #include "data.h"
 
 typedef struct dictionary_entry_t{
@@ -18,6 +17,7 @@ typedef struct dictionary_t{
 dictionary dict_new();
 dictionary dict_get_extension(dictionary* child);
 data_update_result dict_update(dictionary* dict, char* name, data data);
-BOOL dict_add(dictionary* dict, char* name, data data);
+BOOL dict_add(dictionary* dict, char* name, data_type type);
 data_access_result dict_get(dictionary* dict, char* name);
+data* dict_get_reference(dictionary* dict, char* name);
 void dict_free(dictionary* dict);

@@ -34,8 +34,21 @@ parse_result_type parse_type(char* str){
     if(!atomic.valid) REVERT
 
     data_type* current_type = atomic.type;
+    char* remaining = atomic.remaining;
     // HERE
     while(TRUE){
-        
+        char* brackets = word_follows(remaining, "[]", FALSE);
+        if(brackets == NULL) break;
+
+        current_type = get_array_type(current_type);
+        remaining = brackets;
     }
+    
+    // Check if whitespace at the end
+    if(!is_whitespace(*remaining)){
+        free_type(current_type);
+        FATAL_REVERT("Unexpected type ending. Expected whitespace.");
+    }
+
+    return PARSE_RESULT_TYPE(current_type, remaining);
 }

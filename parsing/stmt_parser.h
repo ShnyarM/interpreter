@@ -1,8 +1,6 @@
 #pragma once
 
-#include "../helper.h"
-#include "expr_parser.h"
-#include "../general_structs.h"
+#include "../structs/statement.h"
 
 typedef struct parse_result_statement_t{
     BOOL valid;
@@ -13,4 +11,3 @@ typedef struct parse_result_statement_t{
 
 parse_result_stmt parse_multiple_statements(char* str);
 parse_result_stmt parse_statement(char* str);
-void free_stmt(stmt* s);

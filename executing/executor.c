@@ -1,8 +1,11 @@
-#include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
 #include "executor.h"
-#include "../general_structs.h"
-#include "../dictionary.h"
+#include "../structs/statement.h"
+#include "../structs/expression.h"
+#include "../structs/dictionary.h"
+#include "../structs/program.h"
+#include "../structs/data.h"
+#include "../structs/function.h"
 
 #define EXEC_ERROR_MESSAGE_LENGTH 100
 
@@ -34,6 +37,42 @@ void write_var_not_init_error(char* variable_name, size_t line){
 
 BOOL stop_next_execution(execution_result e){
     return (!e.succesful || e.stop_execution || e.break_while);
+}
+
+// Gets reference to variable
+static data* access_variable(var_access* variable, dictionary* dict){
+    if(variable == NULL) return NULL;
+
+    data* inner_access = access_variable(variable->inner_access, dict);
+    
+    if(variable->type == Literal){
+        data* var_value = dict_get_reference(dict, variable->name);
+        if(var_value == NULL){
+            write_var_not_init_error(variable->name, variable->line);
+            return NULL;
+        }
+
+        return var_value;
+    }else if(variable->type == Var_Access_Array){
+        expr_eval_result index_value = eval_expr(variable->index, dict);
+        if(!index_value.succesful || inner_access == NULL) return NULL;
+        
+        if(!is_data_of_kind_array(*inner_access)){
+            write_exec_error("Variable can't be accessed as an array, as it is not an array.", variable->line);
+            return NULL;
+        }
+
+        if(!is_data_number_type(index_value.data)){
+            write_exec_error("Index of array access is not of type number.", variable->line);
+            return NULL;
+        }
+
+        data* arr_access_value = data_array_get_reference(get_array_from_data(*inner_access), (int)(index_value.data.value.number));
+        if(arr_access_value == NULL) return NULL;
+        return arr_access_value;
+    }
+
+    return NULL;
 }
 
 static expr_eval_result eval_expr(expr* expression, dictionary* dict){
@@ -112,40 +151,10 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
         res.data = NUMBER_DATA(-num1);
     }
 
-    if(expression->type == Var){
-        data_access_result var_value = dict_get(dict, expression->variable);
-        if(var_value.valid) res.data = var_value.result;
+    if(expression->type == Var_Acc){
+        data* var_value = access_variable(expression->variable, dict);
+        if(var_value != NULL) res.data = *var_value;
         else{
-            write_var_not_init_error(expression->variable, expression->line);
-            res.succesful = FALSE;
-            return res;
-        }
-    }
-
-    if(expression->type == Arr_Access){
-        int index = (int)GET_NUMBER_FROM_DATA(value1.data);
-
-        data_access_result data_array = dict_get(dict, expression->variable);
-        if(!data_array.valid){
-            write_var_not_init_error(expression->variable, expression->line);
-            res.succesful = FALSE;
-            return res;
-        }
-        if(!IS_ARRAY(data_array.result)){
-            write_exec_error("Variable is not an array.", expression->line);
-            res.succesful = FALSE;
-            return res;
-        }
-        if(index < 0 || index >= data_array.result.size){
-            write_exec_error("Index is not within array bounds.", expression->line);
-            res.succesful = FALSE;
-            return res;
-        }
-
-        data_access_result var_value = data_array_get(data_array.result.value.arr, index);
-        if(var_value.valid) res.data = var_value.result;
-        else{
-            write_exec_error("Couldn't get value from array.", expression->line);
             res.succesful = FALSE;
             return res;
         }
@@ -198,7 +207,7 @@ void print_data(data d, BOOL new_line){
     if(IS_ARRAY(d)){ //If its array, print every value
         printf("[");
 
-        int size = d.size;
+        int size = data_array_get_size(get_array_from_data(d));
         for(int i = 0; i < size-1; i++){
             print_data(data_array_get(d.value.arr, i).result, FALSE);
             printf(", ");
@@ -224,8 +233,13 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == Ass){
-        data_update_result result = dict_update(dict, statement->variable, inner_expression.data);
-        // result == FALSE, then variable has not been initialized
+        data* data_reference = access_variable(statement->variable, dict);
+        if(data_reference == NULL){
+            exec.succesful = FALSE;
+            return exec;
+        }
+
+        data_update_result result = data_update_value(data_reference, inner_expression.data);
         if(!result.valid){
             if(result.reason == NotInitialized) write_var_not_init_error(statement->variable, statement->line);
             else if(result.reason == DifferentType) write_exec_error("Cannot assign to variable, as expression has different type.", statement->line);
@@ -235,73 +249,28 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
         }
     }
 
-    if(statement->type == Arr_Ass){
-        expr_eval_result index_expression = eval_expr(statement->expression_2, dict);
-        if(!index_expression.succesful){
-            exec.succesful = FALSE;
-            return exec;
-        }
-        int index = (int)GET_NUMBER_FROM_DATA(index_expression.data);
-
-        data value = inner_expression.data;
-
-        data_access_result data_array = dict_get(dict, statement->variable);
-        if(!data_array.valid){
-            write_var_not_init_error(statement->variable, statement->line);
-            exec.succesful = FALSE;
-            return exec;
-        }
-        if(!IS_ARRAY(data_array.result)){
-            write_exec_error("Variable is not an array.", statement->line);
-            exec.succesful = FALSE;
-            return exec;
-        }
-        if(index < 0 || index >= data_array.result.size){
-            write_exec_error("Index is not within array bounds.", statement->line);
+    if(statement->type == Init){
+        if(statement->variable->type != Literal){
+            write_exec_error("ERROR, variable being initialized is not a literal, this shouldnt even happen.", statement->line);
             exec.succesful = FALSE;
             return exec;
         }
 
-        data_update_result result = data_array_set(data_array.result.value.arr, index, value);
-
-        // result == FALSE, then variable has already been initialized
-        if(!result.valid){
-            if(result.reason == NotInIndexRange) write_exec_error("Index is not within array bounds.", statement->line);
-            else if(result.reason == DifferentType) write_exec_error("Cannot assign to variable, as expression has different type.", statement->line);
-            else write_exec_error("Couldn't assign value to variable.", statement->line);
-
-            exec.succesful = FALSE;
-            return exec;
-        }
-    }
-
-    if(statement->type == Var_Init){
-        BOOL result = dict_add(dict, statement->variable, inner_expression.data);
+        BOOL result = dict_add(dict, statement->variable->name, *statement->data_type);
         // result == FALSE, then variable has already been initialized
         if(!result){
             write_exec_error("Variable has already been initialized.", statement->line);
             exec.succesful = FALSE;
             return exec;
         }
-    }
 
-    if(statement->type == Arr_Init){
-        int size = (int)GET_NUMBER_FROM_DATA(inner_expression.data);
-        if(size <= 0){
-            write_exec_error("Array size can't be zero or negative.", statement->line);
-            exec.succesful = FALSE;
-            return exec;
-        }
-
-        data_array* array_ptr = data_array_new(size, statement->data_type); 
-        data data_array = NUMBER_ARRAY_DATA(array_ptr, size);
-        BOOL result = dict_add(dict, statement->variable, data_array);
-
-        // result == FALSE, then variable has already been initialized
-        if(!result){
-            write_exec_error("Variable has already been initialized.", statement->line);
-            exec.succesful = FALSE;
-            return exec;
+        if(statement->expression != NULL){
+            data_update_result init = dict_update(dict, statement->variable->name, inner_expression.data);
+            if(!init.valid){
+                exec.succesful = FALSE;
+                if(init.reason == DifferentType) write_exec_error("Cannot initialize variable, as the given expression has a different data type", statement->line);
+                return exec;
+            }
         }
     }
 

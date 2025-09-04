@@ -30,29 +30,13 @@ extern char OPENING_SQUARE_BRACKET_ERROR[];
 extern char CLOSING_SQUARE_BRACKET_ERROR[];
 extern char SEMICOLON_ERROR[];
 
-void free_function(function* func){
-    free(func->name);
-    free_stmt(func->content);
-    
-    free(func);
-}
-
-//TO DO: add types
-static function* get_function(char* name, stmt* content){
-    function* func = malloc(sizeof(function));
-    func->name = copy_of_string(name);
-    func->content = content;
-    func->return_type = INVALID_DATA_TYPE;
-    return func;
-}
-
 parse_result_function parse_function(char* str){
     PARSE_INIT
 
     char* function_keyword = word_follows(str, "function", TRUE);
     if(function_keyword == NULL) REVERT
 
-    parse_result_expr function_name = parse_variable(function_keyword);
+    parse_result_expr function_name = parse_variable_name(function_keyword);
     FATAL_CHECK(function_name)
     if(!function_name.valid) FATAL_REVERT("Expected function name after 'function' keyword.")
 

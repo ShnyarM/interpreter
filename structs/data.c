@@ -1,16 +1,27 @@
-#include "general_structs.h"
 #include "data.h"
-#include <stdio.h>
+#include <stdlib.h>
 
 data_update_result data_update_value(data* orig, data new_value){
     if(!type_equality(orig->type, new_value.type)) return (data_update_result){FALSE, DifferentType};
     // Check if new_value or old value is array, to properly add and remove references
-    if(new_value.type->kind == Array) data_array_add_reference(new_value.value.arr);
-    if(orig->type->kind == Array) data_array_remove_reference(orig->value.arr);
+    if(is_data_of_kind_array(new_value)) data_array_add_reference(new_value.value.arr);
+    if(is_data_of_kind_array(*orig)) data_array_remove_reference(orig->value.arr);
 
     *orig = new_value;
 
     return (data_update_result){TRUE, NoFailure};
+}
+
+BOOL is_data_of_kind_array(data d){
+    return is_type_array(*d.type);
+}
+
+BOOL is_data_number_type(data d){
+    return is_type_number(*d.type);
+}
+
+data_array* get_array_from_data(data d){
+    return d.value.arr;
 }
 
 // Ownership of type gets transferred
@@ -48,6 +59,19 @@ data_access_result data_array_get(data_array* arr, int index){
     return (data_access_result){TRUE, arr->list[index]};
 }
 
+//TO DO: add index checks
+data* data_array_get_reference(data_array* arr, int index){
+    if(index < 0){
+        return NULL;
+    }
+
+    return &arr->list[index];
+}
+
+int data_array_get_size(data_array* arr){
+    return arr->size;
+}
+
 void data_array_add_reference(data_array* arr){
     arr->references++;
 }
@@ -60,7 +84,7 @@ void data_array_remove_reference(data_array* arr){
 }
 
 void free_data(data data){
-    if(data.type->kind == Array){
+    if(data.type->kind == Type_Kind_Array){
         data_array_remove_reference(data.value.arr);
     }
 

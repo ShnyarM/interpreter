@@ -2,7 +2,7 @@
 
 #include "../helper.h"
 #include "expr_parser.h"
-#include "../general_structs.h"
+#include "../structs/function.h"
 
 typedef struct parse_result_function_t{
     BOOL valid;
@@ -12,4 +12,3 @@ typedef struct parse_result_function_t{
 } parse_result_function;
 
 parse_result_function parse_function(char* str);
-void free_function(function* s);

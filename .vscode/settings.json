@@ -5,7 +5,6 @@
         "cstdlib": "c",
         "stmt_parser.h": "c",
         "helper.h": "c",
-        "general_structs.h": "c",
         "expr_parser.h": "c",
         "dictionary.h": "c",
         "optional": "c",
@@ -23,6 +22,8 @@
         "array.h": "c",
         "_parser_helper.h": "c",
         "executor.h": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "stdio.h": "c",
+        "statement.h": "c"
     }
 }

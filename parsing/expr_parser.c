@@ -1,5 +1,4 @@
 #include "../helper.h"
-#include "../general_structs.h"
 #include "expr_parser.h"
 #include "_parser_helper.h"
 
@@ -33,42 +32,6 @@ static parse_result_expr parse_mul_expr(char *str);
 static parse_result_expr parse_atomic(char *str);
 static parse_result_expr parse_integer(char *str);
 static parse_result_expr parse_parens(char *str);
-
-void free_expr(expr *e)
-{
-    if (e == NULL) return;
-
-    if (e->variable != NULL) free(e->variable);
-
-    free_expr(e->expr_1);
-    free_expr(e->expr_2);
-
-    free(e);
-}
-
-static expr *get_expr(e_type type, data data, expr *ex_1, expr *ex_2)
-{
-    expr *expression = (expr *)malloc(sizeof(expr));
-    expression->type = type;
-    expression->data = data;
-    expression->variable = NULL;
-    expression->expr_1 = ex_1;
-    expression->expr_2 = ex_2;
-    expression->line = LINE_COUNTER;
-    return expression;
-}
-
-static expr *get_var_expr(char *name)
-{
-    expr *expression = get_expr(Var, EMPTY_DATA, NULL, NULL);
-    expression->variable = copy_of_string(name); // makes its own copy
-    return expression;
-}
-
-expr* get_number_literal(double value){
-    expr* expression = get_expr(Lit, NUMBER_DATA(value), NULL, NULL);
-    return expression;
-}
 
 parse_result_expr parse_expr(char *str)
 {   
@@ -239,7 +202,7 @@ static parse_result_expr parse_atomic(char *str)
     if (integer.valid)
         return integer;
 
-    parse_result_expr variable = parse_var_or_array(str);
+    parse_result_expr variable = parse_variable_access(str);
     FATAL_CHECK(variable)
     if (variable.valid)
         return variable;
@@ -280,7 +243,7 @@ static parse_result_expr parse_integer(char *str)
     return PARSE_RESULT_EXPR(literal, str_end);
 }
 
-parse_result_expr parse_variable(char *str)
+parse_result_expr parse_variable_name(char *str)
 {   
     PARSE_INIT
 
@@ -310,37 +273,49 @@ parse_result_expr parse_variable(char *str)
         FATAL_REVERT("Variable name is a reserved keyword, please use a different name.")
     }
 
-    expr *var_expr = get_var_expr(buffer);
+    expr *var_expr = expr_get_var_name(buffer);
     return PARSE_RESULT_EXPR(var_expr, str);
 }
 
-parse_result_expr parse_var_or_array(char* str){
+parse_result_expr parse_variable_access(char* str){
     PARSE_INIT
 
-    parse_result_expr variable = parse_variable(str);
+    parse_result_expr variable = parse_variable_name(str);
     FATAL_CHECK(variable)
     if(!variable.valid) REVERT
 
-    char* square_open_brackets = char_follows(variable.remaining, '[', FALSE);
-    if(square_open_brackets == NULL) return variable;
+    char* remaining = variable.remaining;
+
+    while(TRUE){
+        char* square_open_brackets = char_follows(remaining, '[', FALSE);
+        if(square_open_brackets == NULL) break;
+        
+        parse_result_expr index = parse_expr(square_open_brackets);
+        FATAL_CHECK(index)
+        if(!index.valid){
+            free_expr(variable.expression);
+            FATAL_REVERT("Invalid index for array.")
+        }
     
-    parse_result_expr index = parse_expr(square_open_brackets);
-    FATAL_CHECK(index)
-    if(!index.valid){
-        free_expr(variable.expression);
-        FATAL_REVERT("Invalid index for array.")
+        char* square_close_brackets = char_follows(index.remaining, ']', FALSE);
+        if(square_close_brackets == NULL){
+            free_expr(variable.expression);
+            free_expr(index.expression);
+            FATAL_REVERT("Expected closing square bracket.")
+        }
+
+        var_access* array_access = var_access_get_array(variable.expression->variable, index.expression);
+        variable.expression->variable = array_access;
+        remaining = square_close_brackets;
     }
 
-    char* square_close_brackets = char_follows(index.remaining, ']', FALSE);
-    if(square_close_brackets == NULL){
+    // Check if whitespace at the end
+    if(!is_whitespace(*remaining)){
         free_expr(variable.expression);
-        free_expr(index.expression);
-        FATAL_REVERT("Expected closing square bracket.")
+        FATAL_REVERT("Unexpected type ending. Expected whitespace.");
     }
 
-    variable.expression->type = Arr_Access;
-    variable.expression->expr_1 = index.expression;
-    variable.remaining = square_close_brackets;
+    variable.remaining = remaining;
 
     return variable;
 }

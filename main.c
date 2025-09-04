@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include "helper.h"
@@ -7,7 +6,8 @@
 #include "parsing/function_parser.h"
 #include "parsing/_parser_helper.h"
 #include "executing/executor.h"
-#include "dictionary.h"
+#include "structs/dictionary.h"
+#include "structs/program.h"
 
 size_t MAX_VARIABLE_LENGTH = 50;
 program RUNNING_PROGRAM;
@@ -19,10 +19,12 @@ extern char PARSE_ERROR_MESSAGE[];
 // <expression> ::= <add-expr> (('==' | '<' | '<=') <add-expr>)*
 // <add-expr> ::= <mul-expr> (('+' | '-') <mul-expr>)*
 // <mul-expr> ::= <atomic> (('*' | '/') <atomic>)*
-// <atomic> ::= ['-' | '!'](<literal> | <var_or_array> | <parens>)
+// <atomic> ::= ['-' | '!'](<literal> | <variable_access> | <parens>)
 // <parens> ::= '(' <expression> ')'
-// <var_or_array> ::== <variable> [ '[' <expression> ']' ]
-// <variable> ::== ('_' | <letter>)('_' | <letter> | <digit>)*
+
+// <variable_name> ::== ('_' | <letter>)('_' | <letter> | <digit>)*
+// <variable_access> ::== <variable_name>( ('['<expression']') )*
+
 // <type> ::== <atomic_type>('[]')*
 // <atomic_type> ::== 'number' | 'any'
 
@@ -33,10 +35,8 @@ extern char PARSE_ERROR_MESSAGE[];
 // <multiple_statements> ::= <statement> (<statement>)*
 // <statement> ::== <function_call>';' | <initialization> | <assignment> | <if> | <while> | <print> | <block> | 'break;' | 'stop;'
 
-// <initialization> ::== <var_init> | <array_init>';'
-// <var_init> ::== <atomic_type> <variable> ['=' <expression>]';'
-// <array_init> ::== '<atomic_type>['<expression>']' <variable>';'
-// <assignment> ::== <var_or_array> '=' <expression>';'
+// <initialization> ::== <type> <variable_name> ['=' <expression>]';'
+// <assignment> ::== <variable_access> '=' <expression>';'
 
 // <if> ::== 'if (' <expression> ')' <statement> ['else' <statement>]
 // <while> ::== 'while (' <expression> ')' <statement>
@@ -157,4 +157,5 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TODO: first arguments for function calls, then return values for function calls, after that clean up type system (proper support for multi dimensional arrays)
+//TO DO: proper system for types (references or static, ownership), array dynamic size changing
+//TO DO: first arguments for function calls, then return values for function calls

@@ -1,4 +1,3 @@
-#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "helper.h"
@@ -12,6 +11,13 @@ BOOL is_var_letter(char c){
     if(c >= 'A' && c <= 'Z') return TRUE;
     if(c >= 'a' && c <= 'z') return TRUE;
     if(c == '_') return TRUE;
+    return FALSE;
+}
+
+BOOL is_whitespace(char c){
+    if(c == ' ') return TRUE;
+    if(c == '\n') return TRUE;
+    if(c == '\t') return TRUE;
     return FALSE;
 }
 

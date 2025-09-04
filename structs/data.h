@@ -16,8 +16,8 @@
 
 
 // Data with value
-#define EMPTY_DATA ((data){INVALID_DATA_TYPE, {NULL}, 0})
-#define NUMBER_DATA(v) ((data){NUMBER_ATOMIC_DATA_TYPE, (data_value){.number=v}, 1})
+#define EMPTY_DATA ((data){INVALID_DATA_TYPE, {NULL}})
+#define NUMBER_DATA(v) ((data){NUMBER_ATOMIC_DATA_TYPE, (data_value){.number=v}})
 #define NUMBER_ARRAY_DATA(ptr, s) ((data){NUMBER_ARRAY_DATA_TYPE, (data_value){.arr=ptr}, s}) // Takes in ptr to array and size
 #define FUNCTION_DATA(ptr) ((data){FUNCTION_DATA_TYPE, (data_value){.function=ptr}, 0})
 
@@ -43,9 +43,8 @@ typedef union data_value_u {
 } data_value;
 
 typedef struct data_t {
-    data_type* type;
+    data_type type;
     data_value value;
-    int size; //size incase it is array
 } data;
 
 typedef struct data_access_result_t{
@@ -62,6 +61,9 @@ typedef struct data_update_result_t{
 
 void free_data(data data);
 data_update_result data_update_value(data* orig, data new_value);
+BOOL is_data_of_kind_array(data d);
+BOOL is_data_number_type(data d);
+data_array* get_array_from_data(data d);
 
 //Arrays
 
@@ -72,9 +74,11 @@ typedef struct data_array_t{
     data* list;
 } data_array;
 
-data_array* data_array_new(int size, data_type type);
+data_array* data_array_new(int size, data_type* type);
 data_update_result data_array_set(data_array* arr, int index, data data);
 data_access_result data_array_get(data_array* arr, int index);
+data* data_array_get_reference(data_array* arr, int index);
+int data_array_get_size(data_array* arr);
 void data_array_add_reference(data_array* arr);
 void data_array_remove_reference(data_array* arr);
 void free_data_array(data_array* arr);

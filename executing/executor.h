@@ -1,8 +1,6 @@
 #pragma once
 
 #include "../helper.h"
-#include "../general_structs.h"
-#include "../dictionary.h"
 
 typedef struct execution_result_t{
     BOOL succesful;
