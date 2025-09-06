@@ -14,6 +14,14 @@
 
 extern size_t LINE_COUNTER;
 
+//Standard error messages
+extern char OPENING_BRACKET_ERROR[];
+extern char CLOSING_BRACKET_ERROR[];
+extern char OPENING_CURLY_BRACKET_ERROR[];
+extern char CLOSING_CURLY_BRACKET_ERROR[];
+extern char OPENING_SQUARE_BRACKET_ERROR[];
+extern char CLOSING_SQUARE_BRACKET_ERROR[];
+
 parse_result_type parse_atomic_type(char* str){
     PARSE_INIT
 
@@ -37,11 +45,17 @@ parse_result_type parse_type(char* str){
     char* remaining = atomic.remaining;
     // HERE
     while(TRUE){
-        char* brackets = word_follows(remaining, "[]", FALSE);
-        if(brackets == NULL) break;
+        char* open_square_brackets = char_follows(remaining, '[', FALSE);
+        if(open_square_brackets == NULL) break;
+
+        char* close_square_brackets = char_follows(open_square_brackets, ']', FALSE);
+        if(close_square_brackets == NULL){
+            free_type(current_type);
+            FATAL_REVERT(CLOSING_SQUARE_BRACKET_ERROR);
+        }
 
         current_type = get_array_type(current_type);
-        remaining = brackets;
+        remaining = close_square_brackets;
     }
     
     // Check if whitespace at the end

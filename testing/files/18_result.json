@@ -1,5 +1,5 @@
 {
-	"output": "[0, 0, 0, 5, 0]",
+	"output": "[0, 0, 0, 5]",
 	"return_code": "0",
 	"description": "Nested arrays"
 }

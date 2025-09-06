@@ -74,10 +74,8 @@ BOOL dict_add(dictionary* dict, char* name, data_type* type){
         return FALSE;
     }
 
-    entry->data.type = type;
-    if(is_type_number(*type)) entry->data.value.number = 0;
-    if(is_type_array(*type)) entry->data.value.arr = data_array_new(10, type->inner_type);
-
+    entry->data.type = copy_of_type(type);
+    entry->data.value = data_default_value(type);
     return TRUE;
 }
 

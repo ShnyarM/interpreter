@@ -20,8 +20,8 @@ data_type* get_atomic_number_type();
 data_type* get_array_type(data_type* inner);
 data_type* copy_of_type(data_type* t);
 BOOL type_equality(data_type* t1, data_type* t2);
-BOOL is_type_array(data_type t);
-BOOL is_type_number(data_type t);
+BOOL is_type_array(data_type* t);
+BOOL is_type_number(data_type* t);
 
 extern data_type GLOBAL_INVALID_TYPE;
 extern data_type GLOBAL_ATOMIC_NUMBER_TYPE;

@@ -161,5 +161,4 @@ int main(int argc, char** argv){
 }
 
 //TO DO: rearrange order of statement parsing to detect inits earlier (current problem is that it tries to parse inits as function calls)
-//TO DO: proper system for types (references or static, ownership), array dynamic size changing
 //TO DO: first arguments for function calls, then return values for function calls

@@ -59,23 +59,29 @@ data_update_result data_update_value(data* orig, data new_value);
 BOOL is_data_of_kind_array(data d);
 BOOL is_data_number_type(data d);
 struct data_array_t* get_array_from_data(data d);
+data_value data_default_value(data_type* type);
+void data_print(data d);
 
 // Arrays
 
 #define INVALID_ARRAY ((data_array){0, 0, NULL, NULL})
 
 typedef struct data_array_t{
-    int size;
+    BOOL initialized;   // Does array have an initialized list?
+
+    int size;           // size which will be shown to user, i.e. size which is "expected"
+    int capacity;       // actual size, i.e. how much the underlying array can hold
     int references;
     data_type* type;    // type which the array stores
     data* list;
 } data_array;
 
-data_array* data_array_new(int size, data_type* type);
-data_update_result data_array_set(data_array* arr, int index, data data);
-data_access_result data_array_get(data_array* arr, int index);
+data_array* data_array_new(data_type* type);
+//data_update_result data_array_set(data_array* arr, int index, data data);
+//data_access_result data_array_get(data_array* arr, int index);
 data* data_array_get_reference(data_array* arr, int index);
 int data_array_get_size(data_array* arr);
+void data_array_print(data_array* arr);
 void data_array_add_reference(data_array* arr);
 void data_array_remove_reference(data_array* arr);
 void free_data_array(data_array* arr);

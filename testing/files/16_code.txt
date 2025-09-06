@@ -1,3 +1,2 @@
-number f = 6;
-number g = 8;
-number[f-g] arr;
+number[] arr;
+print(arr[-1]);

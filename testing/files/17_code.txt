@@ -1,13 +1,19 @@
 number i = 0;
 number toggle = 0;
 
-number[5] a;
-number[10] b;
-number[3] c;
+number[] a;
+a[5] = 6;
+number[] b;
+b[10] = 6;
+number[] c;
+c[7] = 2;
+
 
 while (i < 5) {
-    number[7] d;
-    number[4] e;
+    number[] d;
+    d[7] = 5;
+    number[] e;
+    e[4] = 62;
 
     a = b;
     b = c;
@@ -15,12 +21,15 @@ while (i < 5) {
     d = e;
 
     if (toggle == 0) {
-        number[6] f;
+        number[] f;
+        f[6] = 1;
+
         e = f;
         a = f;
         toggle = 1;
     } else {
-        number[8] g;
+        number[] g;
+        g[8] = 3;
         b = g;
         c = g;
         toggle = 0;
@@ -32,21 +41,26 @@ while (i < 5) {
 number j = 0;
 
 while (j < 3) {
-    number[2] x;
-    number[9] y;
-    number[4] d;
-    number[5] e;
+    number[] x;
+    x[2] = 6;
+    number[] y;
+    number[] d;
+    d[4] = 14;
+    number[] e;
+    e[5] = 26;
 
     x = y;
     y = a;
     a = x;
 
     if (j == 1) {
-        number[12] z;
+        number[] z;
+        z[12] = 26;
         b = z;
         c = z;
     } else {
-        number[15] w;
+        number[] w;
+        w[15] = 1565;
         d = w;
         e = w;
     }

@@ -71,6 +71,11 @@ static data* access_variable(var_access* variable, dictionary* dict){
             return NULL;
         }
 
+        if(GET_NUMBER_FROM_DATA(index_value.data) < 0){
+            write_exec_error("Arrays cannot be accessed with a negative index.", variable->line);
+            return NULL;
+        }
+
         data* arr_access_value = data_array_get_reference(get_array_from_data(*inner_access), (int)(index_value.data.value.number));
         if(arr_access_value == NULL) return NULL;
         return arr_access_value;
@@ -207,25 +212,6 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
     return res;
 }
 
-void print_data(data d, BOOL new_line){
-    if(is_data_of_kind_array(d)){ //If its array, print every value
-        printf("[");
-
-        int size = data_array_get_size(get_array_from_data(d));
-        for(int i = 0; i < size-1; i++){
-            print_data(data_array_get(d.value.arr, i).result, FALSE);
-            printf(", ");
-        }
-
-        print_data(data_array_get(d.value.arr, size-1).result, FALSE);
-        printf("]");
-    }else{
-        printf("%.15g", GET_NUMBER_FROM_DATA(d));
-    }
-
-    if(new_line) printf("\n");
-}
-
 execution_result run_single_statement(stmt* statement, dictionary* dict){
     execution_result exec = {TRUE, FALSE, FALSE};
     if(statement == NULL) return exec;
@@ -279,7 +265,8 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == Print){
-        print_data(inner_expression.data, TRUE);
+        data_print(inner_expression.data);
+        printf("\n");
     }
 
     if(statement->type == Function_Call){

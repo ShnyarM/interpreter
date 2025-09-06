@@ -1,6 +1,7 @@
 #include "types.h"
 #include "../helper.h"
 #include <stdlib.h>
+#include <stdio.h>
 
 data_type GLOBAL_INVALID_TYPE = (data_type){Type_Kind_None, Type_Atomic_None, NULL, TRUE};
 data_type GLOBAL_ATOMIC_NUMBER_TYPE = (data_type){Type_Kind_Atomic, Type_Atomic_Number, NULL, TRUE};
@@ -32,6 +33,7 @@ data_type* get_array_type(data_type* inner){
 
 data_type* copy_of_type(data_type* t){
     if(t == NULL) return NULL;
+    if(t->global) return t;
 
     data_type* copy = get_plain_type();
     copy->atomic_type = t->atomic_type;
@@ -54,17 +56,18 @@ BOOL type_equality(data_type* t1, data_type* t2){
     return same_atomic && same_kind && same_inner;
 }
 
-BOOL is_type_array(data_type t){
-    return t.kind == Type_Kind_Array;
+BOOL is_type_array(data_type* t){
+    return t->kind == Type_Kind_Array;
 }
 
-BOOL is_type_number(data_type t){
-    return t.kind == Type_Kind_Atomic && t.atomic_type == Type_Atomic_Number;
+BOOL is_type_number(data_type* t){
+    return t->kind == Type_Kind_Atomic && t->atomic_type == Type_Atomic_Number;
 }
 
 
 void free_type(data_type* t){
     if(t == NULL) return;
+    //printf("%p\n\n", t);
     if(t->global) return;
 
     free_type(t->inner_type);

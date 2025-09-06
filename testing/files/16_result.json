@@ -1,5 +1,5 @@
 {
-	"output": "There was an error while running the script. Error:\nRuntime error on line 3: Array size can't be zero or negative.",
+	"output": "There was an error while running the script. Error:\nRuntime error on line 2: Arrays cannot be accessed with a negative index.",
 	"return_code": "1",
-	"description": "Negative array size."
+	"description": "Negative array index."
 }

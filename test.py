@@ -12,7 +12,7 @@ if "--create" in sys.argv:
         file.write('{\n\t"output": "",\n\t"return_code": "",\n\t"description": ""\n}')
     sys.exit(0)
 
-for i in range(min(test_cases_amn, 12)):
+for i in range(min(test_cases_amn, 2000)):
     process = subprocess.run(f"./parse testing/files/{i}_code.txt", shell=True, capture_output=True, text=True)
     output = process.stdout
     return_code = process.returncode
@@ -30,7 +30,7 @@ print(f"Tests passed! {test_cases_amn} total test cases.")
 
 if "--memory" in sys.argv:
     print("\nNow checking for memory leaks.")
-    for i in range(min(test_cases_amn, 12)):
+    for i in range(min(test_cases_amn, 2000)):
         process = subprocess.run(f"valgrind ./parse testing/files/{i}_code.txt", shell=True, capture_output=True, text=True)
         output = process.stderr
 

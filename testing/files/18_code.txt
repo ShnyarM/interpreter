@@ -1,7 +1,7 @@
-number[5] arr1;
+number[] arr1;
 
 if(1){
-    number[5] arr2;
+    number[] arr2;
     arr2[3] = 5;
     arr1 = arr2;
 }
