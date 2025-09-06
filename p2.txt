@@ -125,4 +125,6 @@ if(1){
     arr[1] = test;
 }
 
+number[][] arr2 = arr;
+
 print(arr);
