@@ -68,7 +68,8 @@ parse_result_function parse_function(char* str){
         FATAL_REVERT(CLOSING_CURLY_BRACKET_ERROR)
     }
 
-    function* func = get_function(function_name.expression->variable, code.statement);
+    function* func = function_get(function_name.expression->variable->name, code.statement);
+
     free_expr(function_name.expression);
 
     return PARSE_RESULT_FUNCTION(func, closing_curly_bracket);

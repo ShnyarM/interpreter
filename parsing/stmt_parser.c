@@ -9,6 +9,7 @@
 #include "type_parser.h"
 #include "../structs/statement.h"
 #include "../structs/expression.h"
+#include "_parser_helper.h"
 
 extern size_t LINE_COUNTER;
 
@@ -71,6 +72,7 @@ static parse_result_stmt parse_assignment(char* str){
 
     stmt* statement = get_ass_statement(variable.expression->variable, expression.expression, NULL);
 
+    variable.expression->variable = NULL; // remove since variable access still gets used in statement, if not removed it would get freed
     free_expr(variable.expression); //Free expression as we dont need it, only needed variable name
     return PARSE_RESULT_STMT(statement, last);
 }
@@ -92,7 +94,9 @@ static parse_result_stmt parse_initialization(char* str){
         char* semicolon = char_follows(variable.remaining, ';', FALSE);
         FATAL_CHECK_NULL_WITH_FREE_EXPR(semicolon, SEMICOLON_ERROR, variable.expression)
 
-        stmt* statement = stmt_get_init_stmt(variable.expression->variable, NULL, NULL);
+        stmt* statement = stmt_get_init_stmt(variable.expression->variable, NULL, type.type, NULL);
+
+        variable.expression->variable = NULL; // remove since variable access still gets used in statement, if not removed it would get freed
         free_expr(variable.expression);
         return PARSE_RESULT_STMT(statement, semicolon);
     }
@@ -111,8 +115,9 @@ static parse_result_stmt parse_initialization(char* str){
         FATAL_REVERT(SEMICOLON_ERROR)
     }
 
-    stmt* statement = stmt_get_init_stmt(variable.expression->variable, expression.expression, NULL);
+    stmt* statement = stmt_get_init_stmt(variable.expression->variable, expression.expression, type.type, NULL);
 
+    variable.expression->variable = NULL; // remove since variable access still gets used in statement, if not removed it would get freed
     free_expr(variable.expression);
     return PARSE_RESULT_STMT(statement, semicolon);
 }
@@ -239,9 +244,10 @@ static parse_result_stmt parse_statement_function_call(char* str){
     char* semi_colon = char_follows(closing_bracket, ';', FALSE);
     FATAL_CHECK_NULL_WITH_FREE_EXPR(semi_colon, SEMICOLON_ERROR, variable.expression);
 
-    stmt* stmt = get_plain_statement(Function_Call);
-    stmt->variable = copy_of_string(variable.expression->variable);
+    stmt* stmt = stmt_get_plain(Function_Call);
+    stmt->variable = variable.expression->variable;
     
+    variable.expression->variable = NULL; // remove since variable access still gets used in statement, if not removed it would get freed
     free_expr(variable.expression);
     return PARSE_RESULT_STMT(stmt, semi_colon);
 }
@@ -293,7 +299,7 @@ parse_result_stmt parse_statement(char* str){
     if(break_statement != NULL){
         char* last = char_follows(break_statement, ';', FALSE);
         FATAL_CHECK_NULL(last, SEMICOLON_ERROR)
-        return PARSE_RESULT_STMT(get_plain_statement(Brk), last);
+        return PARSE_RESULT_STMT(stmt_get_plain(Brk), last);
     }
 
     // Stop statement
@@ -301,7 +307,7 @@ parse_result_stmt parse_statement(char* str){
     if(stop != NULL){
         char* last = char_follows(stop, ';', FALSE);
         FATAL_CHECK_NULL(last, SEMICOLON_ERROR)
-        return PARSE_RESULT_STMT(get_plain_statement(Stop), last);
+        return PARSE_RESULT_STMT(stmt_get_plain(Stop), last);
     }
 
     parse_result_stmt init = parse_initialization(str);

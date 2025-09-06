@@ -24,6 +24,7 @@
         "executor.h": "c",
         "stdint.h": "c",
         "stdio.h": "c",
-        "statement.h": "c"
+        "statement.h": "c",
+        "expression.h": "c"
     }
 }

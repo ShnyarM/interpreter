@@ -1,11 +1,11 @@
 #include "function.h"
 
 //TO DO: add types
-static function* get_function(char* name, stmt* content){
+function* function_get(char* name, stmt* content){
     function* func = malloc(sizeof(function));
     func->name = copy_of_string(name);
     func->content = content;
-    func->return_type = INVALID_DATA_TYPE;
+    func->return_type = &GLOBAL_INVALID_TYPE;
     return func;
 }
 

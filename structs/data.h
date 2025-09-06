@@ -1,5 +1,5 @@
 #pragma once
-#include "helper.h"
+#include "../helper.h"
 #include "types.h"
 
 // helper Macros
@@ -16,20 +16,15 @@
 
 
 // Data with value
-#define EMPTY_DATA ((data){INVALID_DATA_TYPE, {NULL}})
-#define NUMBER_DATA(v) ((data){NUMBER_ATOMIC_DATA_TYPE, (data_value){.number=v}})
-#define NUMBER_ARRAY_DATA(ptr, s) ((data){NUMBER_ARRAY_DATA_TYPE, (data_value){.arr=ptr}, s}) // Takes in ptr to array and size
-#define FUNCTION_DATA(ptr) ((data){FUNCTION_DATA_TYPE, (data_value){.function=ptr}, 0})
+#define EMPTY_DATA ((data){&GLOBAL_INVALID_TYPE, {NULL}})
+#define NUMBER_DATA(v) ((data){&GLOBAL_ATOMIC_NUMBER_TYPE, (data_value){.number=v}})
+#define FUNCTION_DATA(ptr) ((data){&GLOBAL_FUNCTION_TYPE, (data_value){.function=ptr}})
 
 // Data extraction
 #define GET_NUMBER_FROM_DATA(d) (d.value.number)
 
 // Data access results
-#define INVALID_DATA_ACCESS_RESULT ((data_access_result){FALSE, (data){NULL, {NULL}}})
-
-// Arrays
-#define INVALID_ARRAY ((data_array){0, 0, NULL, NULL})
-
+#define INVALID_DATA_ACCESS_RESULT ((data_access_result){FALSE, EMPTY_DATA})
 
 struct data_t;
 struct data_array_t;
@@ -43,7 +38,7 @@ typedef union data_value_u {
 } data_value;
 
 typedef struct data_t {
-    data_type type;
+    data_type* type;
     data_value value;
 } data;
 
@@ -63,14 +58,16 @@ void free_data(data data);
 data_update_result data_update_value(data* orig, data new_value);
 BOOL is_data_of_kind_array(data d);
 BOOL is_data_number_type(data d);
-data_array* get_array_from_data(data d);
+struct data_array_t* get_array_from_data(data d);
 
-//Arrays
+// Arrays
+
+#define INVALID_ARRAY ((data_array){0, 0, NULL, NULL})
 
 typedef struct data_array_t{
     int size;
     int references;
-    data_type* type;
+    data_type* type;    // type which the array stores
     data* list;
 } data_array;
 

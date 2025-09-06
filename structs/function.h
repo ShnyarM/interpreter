@@ -7,3 +7,6 @@ typedef struct function_t{
     stmt* content;
     data_type* return_type;
 } function;
+
+function* function_get(char* name, stmt* content);
+void free_function(function* func); 

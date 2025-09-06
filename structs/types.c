@@ -1,19 +1,17 @@
 #include "types.h"
-#include "helper.h"
+#include "../helper.h"
 #include <stdlib.h>
 
-void free_type(data_type* t){
-    if(t == NULL) return;
-    
-    free_type(t->inner_type);
-    free(t);
-}
+data_type GLOBAL_INVALID_TYPE = (data_type){Type_Kind_None, Type_Atomic_None, NULL, TRUE};
+data_type GLOBAL_ATOMIC_NUMBER_TYPE = (data_type){Type_Kind_Atomic, Type_Atomic_Number, NULL, TRUE};
+data_type GLOBAL_FUNCTION_TYPE = (data_type){Type_Kind_Function, Type_Atomic_None, NULL, TRUE};
 
 data_type* get_plain_type(){
     data_type* t = (data_type*)malloc(sizeof(data_type));
-    t->atomic_type = None;
-    t->kind = None;
+    t->atomic_type = Type_Atomic_None;
+    t->kind = Type_Kind_None;
     t->inner_type = NULL;
+    t->global = FALSE;
     return t;
 }
 
@@ -62,4 +60,13 @@ BOOL is_type_array(data_type t){
 
 BOOL is_type_number(data_type t){
     return t.kind == Type_Kind_Atomic && t.atomic_type == Type_Atomic_Number;
+}
+
+
+void free_type(data_type* t){
+    if(t == NULL) return;
+    if(t->global) return;
+
+    free_type(t->inner_type);
+    free(t);
 }

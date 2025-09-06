@@ -1,5 +1,5 @@
 #include "type_parser.h"
-#include "types.h"
+#include "../structs/types.h"
 #include "_parser_helper.h"
 
 #define PARSE_RESULT_TYPE(t, r) (parse_result_type){TRUE, t, r, FALSE}
@@ -19,7 +19,7 @@ parse_result_type parse_atomic_type(char* str){
 
     char* number = word_follows(str, "number", FALSE);
     if(number != NULL){
-        data_type* number_type = get_atomic_number_type();
+        data_type* number_type = &GLOBAL_ATOMIC_NUMBER_TYPE;
         return PARSE_RESULT_TYPE(number_type, number);
     }
 

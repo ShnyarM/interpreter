@@ -82,7 +82,7 @@ parse_result_expr parse_expr(char *str)
             break;
         }
 
-        expr *combined = get_expr(operator, EMPTY_DATA, add_expr.expression, next_add_expr.expression);
+        expr *combined = expr_get_plain(operator, EMPTY_DATA, add_expr.expression, next_add_expr.expression);
 
         add_expr.expression = combined;
         add_expr.remaining = next_add_expr.remaining;
@@ -120,7 +120,7 @@ static parse_result_expr parse_add_expr(char *str)
             break;
         }
 
-        expr *combined = get_expr(char_to_operator(next.token), EMPTY_DATA, mul_expr.expression, next_mul_expr.expression);
+        expr *combined = expr_get_plain(char_to_operator(next.token), EMPTY_DATA, mul_expr.expression, next_mul_expr.expression);
 
         mul_expr.expression = combined;
         mul_expr.remaining = next_mul_expr.remaining;
@@ -158,7 +158,7 @@ static parse_result_expr parse_mul_expr(char *str)
             break;
         }
 
-        expr *combined = get_expr(char_to_operator(next.token), EMPTY_DATA, atomic.expression, next_atomic.expression);
+        expr *combined = expr_get_plain(char_to_operator(next.token), EMPTY_DATA, atomic.expression, next_atomic.expression);
 
         atomic.expression = combined;
         atomic.remaining = next_atomic.remaining;
@@ -179,7 +179,7 @@ static parse_result_expr parse_atomic(char *str)
         FATAL_CHECK(atomic)
         if (atomic.valid)
         {
-            expr *neg = get_expr(Neg, EMPTY_DATA, atomic.expression, NULL);
+            expr *neg = expr_get_plain(Neg, EMPTY_DATA, atomic.expression, NULL);
             atomic.expression = neg;
             return atomic;
         }
@@ -190,7 +190,7 @@ static parse_result_expr parse_atomic(char *str)
         FATAL_CHECK(atomic)
         if (atomic.valid)
         {
-            expr *bool_neg = get_expr(Bool_Neg, EMPTY_DATA, atomic.expression, NULL);
+            expr *bool_neg = expr_get_plain(Bool_Neg, EMPTY_DATA, atomic.expression, NULL);
             atomic.expression = bool_neg;
             return atomic;
         }
@@ -239,7 +239,7 @@ static parse_result_expr parse_integer(char *str)
         str--;
     }
 
-    expr *literal = get_expr(Lit, NUMBER_DATA((double)value), NULL, NULL);
+    expr *literal = expr_get_plain(Lit, NUMBER_DATA((double)value), NULL, NULL);
     return PARSE_RESULT_EXPR(literal, str_end);
 }
 
@@ -307,12 +307,6 @@ parse_result_expr parse_variable_access(char* str){
         var_access* array_access = var_access_get_array(variable.expression->variable, index.expression);
         variable.expression->variable = array_access;
         remaining = square_close_brackets;
-    }
-
-    // Check if whitespace at the end
-    if(!is_whitespace(*remaining)){
-        free_expr(variable.expression);
-        FATAL_REVERT("Unexpected type ending. Expected whitespace.");
     }
 
     variable.remaining = remaining;

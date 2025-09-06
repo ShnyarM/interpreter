@@ -19,10 +19,11 @@ typedef struct statement_t{
     size_t line;                      // line at which this expression appears
 } stmt;
 
-stmt* get_ass_statement(char* variable, expr* expr, stmt* next_statement);
-stmt* stmt_get_init_stmt(var_access* variable, expr* value, stmt* next_statement);
+stmt* stmt_get_plain(s_type type);
+stmt* get_ass_statement(var_access* variable, expr* expr, stmt* next_statement);
+stmt* stmt_get_init_stmt(var_access* variable, expr* value, data_type* type, stmt* next_statement);
 stmt* get_if_statement(expr* condition, stmt* true_branch, stmt* false_branch, stmt* next_statement);
 stmt* get_while_statement(expr* condition, stmt* true_branch, stmt* next_statement);
 stmt* get_print_statement(expr* expression, stmt* next_statement);
 stmt* get_block_statement(stmt* inside, stmt* next_statement);
-void free_stmt(stmt* s);
+void free_stmt(stmt* s); 

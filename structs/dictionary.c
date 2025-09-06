@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include "dictionary.h"
 
 #define INIT_SIZE 1
@@ -66,7 +67,7 @@ static dict_entry* dict_add_to_list(dictionary* dict, char* name){
 
 // adds to list if not present, returns TRUE if successful and returns FALSE if already present
 // does not check in child dictionary
-BOOL dict_add(dictionary* dict, char* name, data_type type){ 
+BOOL dict_add(dictionary* dict, char* name, data_type* type){ 
 
     dict_entry* entry = dict_add_to_list(dict, name);
     if(entry == NULL){
@@ -74,8 +75,8 @@ BOOL dict_add(dictionary* dict, char* name, data_type type){
     }
 
     entry->data.type = type;
-    if(is_type_number(type)) entry->data.value.number = 0;
-    if(is_type_array(type)) entry->data.value.arr = data_array_new(10, type.inner_type);
+    if(is_type_number(*type)) entry->data.value.number = 0;
+    if(is_type_array(*type)) entry->data.value.arr = data_array_new(10, type->inner_type);
 
     return TRUE;
 }
@@ -141,11 +142,11 @@ static void dict_increase_capacity(dictionary* dict){
     free(old_list);
 }
 
-void dict_free(dictionary* dict){
+void free_dict(dictionary* dict){
     //Free each variable
     for(int i = 0; i < dict->length; i++){
         free(dict->list[i].name);
-        data_free(dict->list[i].data);
+        free_data(dict->list[i].data);
     }
 
     free(dict->list);

@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 #include "helper.h"
 #include "parsing/stmt_parser.h"
 #include "parsing/expr_parser.h"
@@ -8,6 +9,7 @@
 #include "executing/executor.h"
 #include "structs/dictionary.h"
 #include "structs/program.h"
+#include "structs/function.h"
 
 size_t MAX_VARIABLE_LENGTH = 50;
 program RUNNING_PROGRAM;
@@ -83,7 +85,8 @@ program parse_program(char* str){
         if(function.valid){
             // create data block which encapsules function
             data func = FUNCTION_DATA(function.function);
-            BOOL result = dict_add(&prog.functions, function.function->name, func);
+            BOOL result = dict_add(&prog.functions, function.function->name, &GLOBAL_FUNCTION_TYPE);
+            dict_update(&prog.functions, function.function->name, func);
 
             if(!result){
                 fatal = TRUE;
@@ -106,7 +109,7 @@ program parse_program(char* str){
     }
 
     if(fatal){
-        dict_free(&prog.functions);
+        free_dict(&prog.functions);
         free_stmt(first_statement);
         prog.valid = FALSE;
         return prog;
@@ -128,9 +131,9 @@ int execute_program(char* str){
 
     execution_result exec = run_program(program.first_statement, &GLOBAL_DICTIONARY);
 
-    dict_free(&GLOBAL_DICTIONARY);
+    free_dict(&GLOBAL_DICTIONARY);
     free_stmt(program.first_statement);
-    dict_free(&program.functions);
+    free_dict(&program.functions);
 
     if(!exec.succesful){
         printf("There was an error while running the script. Error:\n%s\n", EXEC_ERROR_MESSAGE);
@@ -157,5 +160,6 @@ int main(int argc, char** argv){
     return result;
 }
 
+//TO DO: rearrange order of statement parsing to detect inits earlier (current problem is that it tries to parse inits as function calls)
 //TO DO: proper system for types (references or static, ownership), array dynamic size changing
 //TO DO: first arguments for function calls, then return values for function calls

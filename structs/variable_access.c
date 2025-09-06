@@ -1,7 +1,8 @@
 #include <stdlib.h>
 #include "variable_access.h"
 #include "expression.h"
-#include "helper.h"
+#include "../helper.h"
+#include <stdio.h>
 
 extern size_t LINE_COUNTER;
 
@@ -37,6 +38,7 @@ var_access* var_access_get_array(var_access* inner, expr* index){
 
 void free_var_access(var_access* v){
     if(v == NULL) return;
+    //printf("%p\n%p\n\n", v, v->name);
 
     free_var_access(v->inner_access);
     free_expr(v->index);

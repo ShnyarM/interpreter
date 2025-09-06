@@ -1,4 +1,5 @@
 #include "data.h"
+#include "function.h"
 #include <stdlib.h>
 
 data_update_result data_update_value(data* orig, data new_value){
@@ -13,10 +14,12 @@ data_update_result data_update_value(data* orig, data new_value){
 }
 
 BOOL is_data_of_kind_array(data d){
+    if(d.type == NULL) return FALSE;
     return is_type_array(*d.type);
 }
 
 BOOL is_data_number_type(data d){
+    if(d.type == NULL) return FALSE;
     return is_type_number(*d.type);
 }
 
@@ -88,8 +91,8 @@ void free_data(data data){
         data_array_remove_reference(data.value.arr);
     }
 
-    if(data.type->kind == Function){
-        // TO DO: add free_function function
+    if(data.type->kind == Type_Kind_Function){
+        free_function(data.value.function);
     }
 
     free_type(data.type);
@@ -97,7 +100,7 @@ void free_data(data data){
 
 void free_data_array(data_array* arr){
     for(int i = 0; i < arr->size; i++){
-        data_free(arr->list[i]);
+        free_data(arr->list[i]);
     } 
 
     free(arr->list);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../helper.h"
+#include "../structs/expression.h"
 
 typedef struct parse_result_expr_t{
     BOOL valid;

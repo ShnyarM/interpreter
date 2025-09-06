@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall
 
-OBJS = types.o data.o expression.o statement.o dictionary.o function.o variable_access.o _parser_helper.o type_parser.o expr_parser.o stmt_parser.o function_parser.o executor.o main.o helper.o 
+OBJS = _parser_helper.o types.o data.o expression.o statement.o dictionary.o function.o variable_access.o type_parser.o expr_parser.o stmt_parser.o function_parser.o executor.o main.o helper.o 
 
 parse: $(OBJS)
 	$(CC) $(CFLAGS) -o parse $(OBJS)
@@ -17,13 +17,13 @@ parse_dbg: $(OBJS)
 types.o: structs/types.c structs/types.h helper.h
 	$(CC) $(CFLAGS) -c structs/types.c
 
-data.o: structs/data.c structs/data.h structs/types.h helper.h
+data.o: structs/data.c structs/data.h structs/types.h structs/function.h helper.h
 	$(CC) $(CFLAGS) -c structs/data.c
 
 expression.o: structs/expression.c structs/expression.h structs/variable_access.h structs/data.h
 	$(CC) $(CFLAGS) -c structs/expression.c
 
-statement.o: structs/statement.c structs/statement.h structs/types.h struct/variable_access.h helper.h
+statement.o: structs/statement.c structs/statement.h structs/types.h structs/variable_access.h helper.h
 	$(CC) $(CFLAGS) -c structs/statement.c
 
 dictionary.o: structs/dictionary.c structs/dictionary.h structs/data.h helper.h
@@ -45,10 +45,10 @@ _parser_helper.o: parsing/_parser_helper.c parsing/_parser_helper.h structs/expr
 type_parser.o: parsing/type_parser.c parsing/type_parser.h parsing/_parser_helper.h structs/types.h helper.h
 	$(CC) $(CFLAGS) -c parsing/type_parser.c
 
-expr_parser.o: parsing/expr_parser.c parsing/expr_parser.h parsing/_parser_helper.h helper.h
+expr_parser.o: parsing/expr_parser.c parsing/expr_parser.h parsing/_parser_helper.h structs/expression.h helper.h
 	$(CC) $(CFLAGS) -c parsing/expr_parser.c
 
-stmt_parser.o: parsing/stmt_parser.c parsing/stmt_parser.h parsing/expr_parser.h parsing/type_parser.h structs/statement.h structs/expression.h
+stmt_parser.o: parsing/stmt_parser.c parsing/stmt_parser.h parsing/expr_parser.h parsing/_parser_helper.h parsing/type_parser.h structs/statement.h structs/expression.h
 	$(CC) $(CFLAGS) -c parsing/stmt_parser.c
 
 function_parser.o: parsing/function_parser.c parsing/function_parser.h parsing/stmt_parser.h parsing/expr_parser.h parsing/_parser_helper.h structs/function.h
@@ -64,7 +64,7 @@ executor.o: executing/executor.c executing/executor.h structs/statement.h struct
 
 
 ## Rest
-main.o: main.c helper.h parsing/stmt_parser.h parsing/expr_parser.h parsing/function_parser.h parsing/_parser_helper.h executing/executor.h structs/dictionary.h structs/program.h
+main.o: main.c helper.h parsing/stmt_parser.h parsing/expr_parser.h parsing/function_parser.h parsing/_parser_helper.h executing/executor.h structs/dictionary.h structs/program.h structs/function.h
 	$(CC) $(CFLAGS) -c main.c
 
 helper.o: helper.c helper.h

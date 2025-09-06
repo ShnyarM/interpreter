@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 #include "executor.h"
 #include "../structs/statement.h"
 #include "../structs/expression.h"
@@ -13,6 +15,8 @@ char EXEC_ERROR_MESSAGE[EXEC_ERROR_MESSAGE_LENGTH];
 
 extern dictionary GLOBAL_DICTIONARY;
 extern program RUNNING_PROGRAM;
+
+expr_eval_result eval_expr(expr* expression, dictionary* dict);
 
 void write_exec_error(char* message, size_t line){
     if(*message == 0) return;
@@ -75,14 +79,14 @@ static data* access_variable(var_access* variable, dictionary* dict){
     return NULL;
 }
 
-static expr_eval_result eval_expr(expr* expression, dictionary* dict){
+expr_eval_result eval_expr(expr* expression, dictionary* dict){
     expr_eval_result res = (expr_eval_result){TRUE, EMPTY_DATA};
     if(expression == NULL) return res;
 
     expr_eval_result value1 = eval_expr(expression->expr_1, dict);
     expr_eval_result value2 = eval_expr(expression->expr_2, dict);
 
-    BOOL both_num = IS_ATOMIC_NUM_TYPE(value1.data) && IS_ATOMIC_NUM_TYPE(value2.data);
+    BOOL both_num = is_data_number_type(value1.data) && is_data_number_type(value2.data);
     // Get number values incase they are numbers and are needed
     double num1 = GET_NUMBER_FROM_DATA(value1.data);
     double num2 = GET_NUMBER_FROM_DATA(value2.data);
@@ -142,7 +146,7 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
     }
 
     if(expression->type == Neg){
-        if(!IS_ATOMIC_NUM_TYPE(value1.data)){
+        if(!is_data_number_type(value1.data)){
             write_exec_error("Invalid operand for negation operator.", expression->line);
             res.succesful = FALSE;
             return res;
@@ -161,7 +165,7 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
     }
 
     if(expression->type == Bool_Neg){
-        if(!IS_ATOMIC_NUM_TYPE(value1.data)){
+        if(!is_data_number_type(value1.data)){
             write_exec_error("Invalid operand for '!' operator.", expression->line);
             res.succesful = FALSE;
             return res;
@@ -204,7 +208,7 @@ static expr_eval_result eval_expr(expr* expression, dictionary* dict){
 }
 
 void print_data(data d, BOOL new_line){
-    if(IS_ARRAY(d)){ //If its array, print every value
+    if(is_data_of_kind_array(d)){ //If its array, print every value
         printf("[");
 
         int size = data_array_get_size(get_array_from_data(d));
@@ -241,7 +245,7 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
 
         data_update_result result = data_update_value(data_reference, inner_expression.data);
         if(!result.valid){
-            if(result.reason == NotInitialized) write_var_not_init_error(statement->variable, statement->line);
+            if(result.reason == NotInitialized) write_var_not_init_error("PLACEHOLDER", statement->line);
             else if(result.reason == DifferentType) write_exec_error("Cannot assign to variable, as expression has different type.", statement->line);
 
             exec.succesful = FALSE;
@@ -256,7 +260,7 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
             return exec;
         }
 
-        BOOL result = dict_add(dict, statement->variable->name, *statement->data_type);
+        BOOL result = dict_add(dict, statement->variable->name, statement->data_type);
         // result == FALSE, then variable has already been initialized
         if(!result){
             write_exec_error("Variable has already been initialized.", statement->line);
@@ -279,7 +283,7 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == Function_Call){
-        data_access_result function_data = dict_get(&RUNNING_PROGRAM.functions, statement->variable);
+        data_access_result function_data = dict_get(&RUNNING_PROGRAM.functions, statement->variable->name);
         if(!function_data.valid){
             write_exec_error("Function has not been defined", statement->line);
             exec.succesful = FALSE;
@@ -288,6 +292,7 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
 
         dictionary function_dict = dict_get_extension(&GLOBAL_DICTIONARY);
         exec = run_program(function_data.result.value.function->content, &function_dict);
+        free_dict(&function_dict);
     }
 
     if(statement->type == If){
@@ -316,7 +321,7 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     if(statement->type == Block){
         dictionary block_dict = dict_get_extension(dict);
         exec = run_program(statement->inner_stmt_1, &block_dict);
-        dict_free(&block_dict);
+        free_dict(&block_dict);
     }
 
     if(statement->type == Brk){
