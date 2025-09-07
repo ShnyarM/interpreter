@@ -16,6 +16,10 @@ data_update_result data_update_value(data* orig, data new_value){
     return (data_update_result){TRUE, NoFailure};
 }
 
+BOOL is_empty_data(data d){
+    return type_equality(d.type, &GLOBAL_INVALID_TYPE) && d.value.number == 0;
+}
+
 BOOL is_data_of_kind_array(data d){
     if(d.type == NULL) return FALSE;
     return is_type_array(d.type);
@@ -28,6 +32,10 @@ BOOL is_data_number_type(data d){
 
 data_array* get_array_from_data(data d){
     return d.value.arr;
+}
+
+function* get_function_from_data(data d){
+    return d.value.function;
 }
 
 // Returns a default value for a given data type
@@ -44,6 +52,8 @@ data_value data_default_value(data_type* type){
 void data_print(data d){
     if(is_data_of_kind_array(d)){ //If its array, print every value
         data_array_print(get_array_from_data(d));
+    }else if(is_empty_data(d)){
+        printf("VOID");
     }else{
         printf("%.15g", GET_NUMBER_FROM_DATA(d));
     }

@@ -2,6 +2,7 @@
 #include "expr_parser.h"
 #include "function_parser.h"
 #include "_parser_helper.h"
+#include "type_parser.h"
 
 #define INVALID_PARSE_RESULT_FUNCTION (parse_result_function){FALSE, NULL, NULL, FALSE}
 #define FATAL_PARSE_RESULT_FUNCTION (parse_result_function){FALSE, NULL, NULL, TRUE}
@@ -46,29 +47,52 @@ parse_result_function parse_function(char* str){
     char* closing_bracket = char_follows(opening_bracket, ')', FALSE);
     FATAL_CHECK_NULL_WITH_FREE_EXPR(closing_bracket, CLOSING_BRACKET_ERROR, function_name.expression);
 
-    /*char* colon = char_follows(opening_bracket, ':', FALSE);
-    FATAL_CHECK_NULL_WITH_FREE_EXPR(colon, "Expected ':'", function_name.expression);
+    data_type* return_type = NULL;
+    char* remaining = NULL;
 
-    // TO DO: add types*/
+    char* colon = char_follows(closing_bracket, ':', FALSE);
+    if(colon != NULL){
+        parse_result_type type = parse_type(colon);
+        FATAL_CHECK_WITH_FREE_EXPR(type, function_name.expression);
+        if(!type.valid){
+            free_expr(function_name.expression);
+            FATAL_REVERT("Expected return type declaration after ':' keyword in function declaration.");
+        }
+        return_type = type.type;
+        remaining =  type.remaining;
+    }else{
+        return_type = &GLOBAL_ANY_TYPE; // No return type declaration exists, so function can return any type
+        remaining = closing_bracket;
+    }
 
-    char* opening_curly_bracket = char_follows(closing_bracket, '{', FALSE);
-    FATAL_CHECK_NULL_WITH_FREE_EXPR(opening_curly_bracket, OPENING_CURLY_BRACKET_ERROR, function_name.expression);
+    char* opening_curly_bracket = char_follows(remaining, '{', FALSE);
+    if(opening_curly_bracket == NULL){
+        free_expr(function_name.expression);
+        free_type(return_type);
+        FATAL_REVERT(OPENING_CURLY_BRACKET_ERROR);
+    }
 
     parse_result_stmt code = parse_multiple_statements(opening_curly_bracket);
-    FATAL_CHECK_WITH_FREE_EXPR(code, function_name.expression)
+    if(code.fatal){
+        free_expr(function_name.expression);
+        free_type(return_type);
+        return FATAL_PARSE_RESULT_FUNCTION;
+    }
     if(!code.valid){
         free_expr(function_name.expression);
+        free_type(return_type);
         FATAL_REVERT("Invalid code inside function.")
     }
 
     char* closing_curly_bracket = char_follows(code.remaining, '}', FALSE);
     if(closing_curly_bracket == NULL){
         free_expr(function_name.expression);
+        free_type(return_type);
         free_stmt(code.statement);
         FATAL_REVERT(CLOSING_CURLY_BRACKET_ERROR)
     }
 
-    function* func = function_get(function_name.expression->variable->name, code.statement);
+    function* func = function_get(function_name.expression->variable->name, return_type, code.statement);
 
     free_expr(function_name.expression);
 

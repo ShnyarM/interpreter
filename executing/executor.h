@@ -9,11 +9,14 @@ typedef struct execution_result_t{
     BOOL succesful;
     BOOL stop_execution;
     BOOL break_while;
+    BOOL return_activated;
+    data data;
 } execution_result;
 
 typedef struct expr_eval_result_t{
     BOOL succesful;
     data data;
+    BOOL stop_execution;
 } expr_eval_result;
 
 //execution_result run_statement(stmt* statement, dictionary* dict);

@@ -8,5 +8,5 @@ typedef struct function_t{
     data_type* return_type;
 } function;
 
-function* function_get(char* name, stmt* content);
+function* function_get(char* name, data_type* return_type, stmt* content);
 void free_function(function* func); 

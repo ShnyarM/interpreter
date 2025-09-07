@@ -59,6 +59,7 @@ data_update_result data_update_value(data* orig, data new_value);
 BOOL is_data_of_kind_array(data d);
 BOOL is_data_number_type(data d);
 struct data_array_t* get_array_from_data(data d);
+struct function_t* get_function_from_data(data d);
 data_value data_default_value(data_type* type);
 void data_print(data d);
 

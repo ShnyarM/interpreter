@@ -51,7 +51,7 @@ expr_parser.o: parsing/expr_parser.c parsing/expr_parser.h parsing/_parser_helpe
 stmt_parser.o: parsing/stmt_parser.c parsing/stmt_parser.h parsing/expr_parser.h parsing/_parser_helper.h parsing/type_parser.h structs/statement.h structs/expression.h
 	$(CC) $(CFLAGS) -c parsing/stmt_parser.c
 
-function_parser.o: parsing/function_parser.c parsing/function_parser.h parsing/stmt_parser.h parsing/expr_parser.h parsing/_parser_helper.h structs/function.h
+function_parser.o: parsing/function_parser.c parsing/function_parser.h parsing/stmt_parser.h parsing/expr_parser.h parsing/type_parser.h parsing/_parser_helper.h structs/function.h
 	$(CC) $(CFLAGS) -c parsing/function_parser.c
 
 

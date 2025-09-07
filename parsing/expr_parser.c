@@ -32,6 +32,7 @@ static parse_result_expr parse_mul_expr(char *str);
 static parse_result_expr parse_atomic(char *str);
 static parse_result_expr parse_integer(char *str);
 static parse_result_expr parse_parens(char *str);
+static parse_result_expr parse_function_call(char* str);
 
 parse_result_expr parse_expr(char *str)
 {   
@@ -202,6 +203,11 @@ static parse_result_expr parse_atomic(char *str)
     if (integer.valid)
         return integer;
 
+    parse_result_expr function_call = parse_function_call(str);
+    FATAL_CHECK(function_call)
+    if (function_call.valid)
+        return function_call;
+
     parse_result_expr variable = parse_variable_access(str);
     FATAL_CHECK(variable)
     if (variable.valid)
@@ -312,6 +318,31 @@ parse_result_expr parse_variable_access(char* str){
     variable.remaining = remaining;
 
     return variable;
+}
+
+static parse_result_expr parse_function_call(char* str){
+    PARSE_INIT
+
+    parse_result_expr variable = parse_variable_name(str);
+    // FATAL check gets skipped here, as it will falsely flag number declarations as keyword violations
+    // TO DO: maybe do keyword violation check only in clear variable inits
+    if(!variable.valid || variable.fatal) REVERT
+
+    char* opening_bracket = char_follows(variable.remaining, '(', FALSE);
+    if(opening_bracket == NULL){
+        free_expr(variable.expression);
+        REVERT
+    }
+
+    char* closing_bracket = char_follows(opening_bracket, ')', FALSE);
+    FATAL_CHECK_NULL_WITH_FREE_EXPR(closing_bracket, CLOSING_BRACKET_ERROR, variable.expression);
+
+    expr* expr = expr_get_plain(Function_Call, EMPTY_DATA, NULL, NULL);
+    expr->variable = variable.expression->variable;
+    
+    variable.expression->variable = NULL; // remove since variable access still gets used in statement, if not removed it would get freed
+    free_expr(variable.expression);
+    return PARSE_RESULT_EXPR(expr, closing_bracket);
 }
 
 static parse_result_expr parse_parens(char *str)

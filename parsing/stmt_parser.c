@@ -24,6 +24,7 @@ extern size_t LINE_COUNTER;
 #define FATAL_CHECK(f) if(f.fatal){return FATAL_PARSE_RESULT_STMT;}
 #define FATAL_CHECK_WITH_FREE_STMT(f, s)if(f.fatal){free_stmt(s); return FATAL_PARSE_RESULT_STMT;}
 #define FATAL_CHECK_WITH_FREE_EXPR(f, e)if(f.fatal){free_expr(e); return FATAL_PARSE_RESULT_STMT;}
+#define FATAL_CHECK_WITH_FREE_TYPE(f, t)if(f.fatal){free_type(t); return FATAL_PARSE_RESULT_STMT;}
 
 #define FATAL_CHECK_NULL(f, msg) if(f==NULL){FATAL_REVERT(msg)}
 #define FATAL_CHECK_NULL_WITH_FREE_STMT(f, msg, s) if(f==NULL){free_stmt(s);FATAL_REVERT(msg)}
@@ -54,7 +55,10 @@ static parse_result_stmt parse_assignment(char* str){
     if(!variable.valid) REVERT
 
     char* equals = char_follows(variable.remaining, '=', FALSE);
-    FATAL_CHECK_NULL_WITH_FREE_EXPR(equals, "Expected equality operator '=' after variable name.", variable.expression)
+    if(equals == NULL){
+        free_expr(variable.expression);
+        REVERT
+    }
 
     parse_result_expr expression = parse_expr(equals);
     FATAL_CHECK_WITH_FREE_EXPR(expression, variable.expression)
@@ -84,9 +88,18 @@ static parse_result_stmt parse_initialization(char* str){
     FATAL_CHECK(type)
     if(!type.valid) REVERT
 
+    // Check if whitespace at the end
+    if(!is_whitespace(*type.remaining)){
+        free_type(type.type);
+        REVERT //Normal revert, since it could still be a variable name
+    }
+
     parse_result_expr variable = parse_variable_name(type.remaining);
-    FATAL_CHECK(variable)
-    if(!variable.valid) FATAL_REVERT("Expected variable name after initialization keyword.")
+    FATAL_CHECK_WITH_FREE_TYPE(variable, type.type);
+    if(!variable.valid){
+        free_type(type.type);
+        FATAL_REVERT("Expected variable name after initialization keyword.");
+    }
 
     char* equals = char_follows(variable.remaining, '=', FALSE);
     if(equals == NULL){
@@ -102,14 +115,20 @@ static parse_result_stmt parse_initialization(char* str){
     }
 
     parse_result_expr expression = parse_expr(equals);
-    FATAL_CHECK(expression)
+    if(expression.fatal){
+        free_type(type.type);
+        free_expr(variable.expression);
+        return FATAL_PARSE_RESULT_STMT;
+    }
     if(!expression.valid){
+        free_type(type.type);
         free_expr(variable.expression);
         FATAL_REVERT("Invalid expression after variable initialization.")
     }
 
     char* semicolon = char_follows(expression.remaining, ';', FALSE);
     if(semicolon == NULL){
+        free_type(type.type);
         free_expr(variable.expression);
         free_expr(expression.expression);
         FATAL_REVERT(SEMICOLON_ERROR)
@@ -224,32 +243,43 @@ static parse_result_stmt parse_print(char* str){
     return PARSE_RESULT_STMT(statement, last);
 }
 
-static parse_result_stmt parse_statement_function_call(char* str){
+static parse_result_stmt parse_return(char* str){
     PARSE_INIT
 
-    parse_result_expr variable = parse_variable_name(str);
-    // FATAL check gets skipped here, as it will falsely flag number declarations as keyword violations
-    // TO DO: maybe do keyword violation check only in clear variable inits
-    if(!variable.valid || variable.fatal) REVERT
+    char* return_keyword = word_follows(str, "return", FALSE);
+    if(return_keyword == NULL) REVERT
 
-    char* opening_bracket = char_follows(variable.remaining, '(', FALSE);
-    if(opening_bracket == NULL){
-        free_expr(variable.expression);
-        REVERT
+    // If no whitespace, statement must end here
+    if(!is_whitespace(*return_keyword)){
+        char* semi_c = char_follows(return_keyword, ';', FALSE);
+        if(semi_c == NULL) REVERT //Revert, since it could still be a variable name
+
+        stmt* statement = stmt_get_plain(Return);
+
+        return PARSE_RESULT_STMT(statement, semi_c);
     }
 
-    char* closing_bracket = char_follows(opening_bracket, ')', FALSE);
-    FATAL_CHECK_NULL_WITH_FREE_EXPR(closing_bracket, CLOSING_BRACKET_ERROR, variable.expression);
+    // return statement doesnt have to have a expresion
+    expr* return_expression = NULL;
+    char* remaining = return_keyword;
 
-    char* semi_colon = char_follows(closing_bracket, ';', FALSE);
-    FATAL_CHECK_NULL_WITH_FREE_EXPR(semi_colon, SEMICOLON_ERROR, variable.expression);
+    parse_result_expr expression = parse_expr(return_keyword);
+    FATAL_CHECK(expression)
+    if(expression.valid){
+        return_expression = expression.expression;
+        remaining = expression.remaining;
+    }
 
-    stmt* stmt = stmt_get_plain(Function_Call);
-    stmt->variable = variable.expression->variable;
-    
-    variable.expression->variable = NULL; // remove since variable access still gets used in statement, if not removed it would get freed
-    free_expr(variable.expression);
-    return PARSE_RESULT_STMT(stmt, semi_colon);
+    char* semi_colon = char_follows(remaining, ';', FALSE);
+    if(semi_colon == NULL){
+        if(return_expression != NULL) free_expr(return_expression);
+        FATAL_REVERT(SEMICOLON_ERROR);
+    }
+
+    stmt* statement = stmt_get_plain(Return);
+    statement->expression = return_expression;
+
+    return PARSE_RESULT_STMT(statement, semi_colon);
 }
 
 static parse_result_stmt parse_block(char* str){
@@ -269,6 +299,24 @@ static parse_result_stmt parse_block(char* str){
     return PARSE_RESULT_STMT(final_statement, curly_bracket_close);
 }
 
+parse_result_stmt parse_expression_statement(char* str){
+    PARSE_INIT
+
+    parse_result_expr expression = parse_expr(str);
+    FATAL_CHECK(expression)
+    if(!expression.valid) REVERT
+
+    char* semi_colon = char_follows(expression.remaining, ';', FALSE);
+    if(semi_colon == NULL){
+        free(expression.expression);
+        FATAL_REVERT(SEMICOLON_ERROR);
+    }
+
+    stmt* statement = stmt_get_plain(Expression);
+    statement->expression = expression.expression;
+    return PARSE_RESULT_STMT(statement, semi_colon);
+}
+
 parse_result_stmt parse_statement(char* str){
     PARSE_INIT
 
@@ -286,13 +334,13 @@ parse_result_stmt parse_statement(char* str){
     FATAL_CHECK(print)
     if(print.valid) return print;
 
-    parse_result_stmt function_call = parse_statement_function_call(str);
-    FATAL_CHECK(function_call)
-    if(function_call.valid) return function_call;
+    parse_result_stmt ret = parse_return(str);
+    FATAL_CHECK(ret)
+    if(ret.valid) return ret;
 
-    parse_result_stmt block = parse_block(str);
-    FATAL_CHECK(block)
-    if(block.valid) return block;
+    parse_result_stmt init = parse_initialization(str);
+    FATAL_CHECK(init)
+    if(init.valid) return init;
 
     // Break statement
     char* break_statement = word_follows(str, "break", FALSE);
@@ -310,13 +358,17 @@ parse_result_stmt parse_statement(char* str){
         return PARSE_RESULT_STMT(stmt_get_plain(Stop), last);
     }
 
-    parse_result_stmt init = parse_initialization(str);
-    FATAL_CHECK(init)
-    if(init.valid) return init;
+    parse_result_stmt block = parse_block(str);
+    FATAL_CHECK(block)
+    if(block.valid) return block;
 
     parse_result_stmt assignment = parse_assignment(str);
     FATAL_CHECK(assignment)
     if(assignment.valid) return assignment;
+
+    parse_result_stmt expression = parse_expression_statement(str);
+    FATAL_CHECK(expression)
+    if(expression.valid) return expression;
 
     REVERT //Can maybe remove
 }

@@ -57,12 +57,6 @@ parse_result_type parse_type(char* str){
         current_type = get_array_type(current_type);
         remaining = close_square_brackets;
     }
-    
-    // Check if whitespace at the end
-    if(!is_whitespace(*remaining)){
-        free_type(current_type);
-        FATAL_REVERT("Unexpected type ending. Expected whitespace.");
-    }
 
     return PARSE_RESULT_TYPE(current_type, remaining);
 }

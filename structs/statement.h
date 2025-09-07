@@ -4,7 +4,7 @@
 #include "expression.h"
 #include "variable_access.h"
 
-typedef enum statement_type {Ass, Init, Print, If, While, Block, Brk, Stop, Function_Call} s_type;
+typedef enum statement_type {Ass, Init, Print, If, While, Block, Brk, Stop, Expression, Return} s_type;
 
 typedef struct statement_t{
     s_type type;

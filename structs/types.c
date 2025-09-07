@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 data_type GLOBAL_INVALID_TYPE = (data_type){Type_Kind_None, Type_Atomic_None, NULL, TRUE};
+data_type GLOBAL_ANY_TYPE = (data_type){Type_Kind_Any, Type_Atomic_None, NULL, TRUE};
 data_type GLOBAL_ATOMIC_NUMBER_TYPE = (data_type){Type_Kind_Atomic, Type_Atomic_Number, NULL, TRUE};
 data_type GLOBAL_FUNCTION_TYPE = (data_type){Type_Kind_Function, Type_Atomic_None, NULL, TRUE};
 
@@ -48,6 +49,7 @@ data_type* copy_of_type(data_type* t){
 BOOL type_equality(data_type* t1, data_type* t2){
     if(t1 == NULL && t2 == NULL) return TRUE;
     if(t1 == NULL || t2 == NULL) return FALSE;
+    if(t1->kind == Type_Kind_Any || t2->kind == Type_Kind_Any) return TRUE;
 
     BOOL same_atomic = t1->atomic_type == t2->atomic_type;
     BOOL same_kind = t1->kind == t2->kind;

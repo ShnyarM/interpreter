@@ -6,7 +6,7 @@
 #define INVALID_DATA_TYPE ((data_type){None, None, NULL})
 
 typedef enum atomic_d_type_e {Type_Atomic_None, Type_Atomic_Any, Type_Atomic_Number} atomic_data_type;
-typedef enum d_type_kind_e {Type_Kind_None, Type_Kind_Atomic, Type_Kind_Array, Type_Kind_Function} data_type_kind;
+typedef enum d_type_kind_e {Type_Kind_None, Type_Kind_Any, Type_Kind_Atomic, Type_Kind_Array, Type_Kind_Function} data_type_kind;
 
 typedef struct data_type_t {
     data_type_kind kind;
@@ -24,5 +24,6 @@ BOOL is_type_array(data_type* t);
 BOOL is_type_number(data_type* t);
 
 extern data_type GLOBAL_INVALID_TYPE;
+extern data_type GLOBAL_ANY_TYPE;
 extern data_type GLOBAL_ATOMIC_NUMBER_TYPE;
 extern data_type GLOBAL_FUNCTION_TYPE;

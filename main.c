@@ -21,7 +21,7 @@ extern char PARSE_ERROR_MESSAGE[];
 // <expression> ::= <add-expr> (('==' | '<' | '<=') <add-expr>)*
 // <add-expr> ::= <mul-expr> (('+' | '-') <mul-expr>)*
 // <mul-expr> ::= <atomic> (('*' | '/') <atomic>)*
-// <atomic> ::= ['-' | '!'](<literal> | <variable_access> | <parens>)
+// <atomic> ::= ['-' | '!'](<literal> | <variable_access> | <parens> | <function_call>)
 // <parens> ::= '(' <expression> ')'
 
 // <variable_name> ::== ('_' | <letter>)('_' | <letter> | <digit>)*
@@ -30,12 +30,12 @@ extern char PARSE_ERROR_MESSAGE[];
 // <type> ::== <atomic_type>('[]')*
 // <atomic_type> ::== 'number' | 'any'
 
-// <function_call> ::== <variable>'()'
+// <function_call> ::== <variable_name>'()'
 
 // <program> ::= (<statement> | <function>)*
 // <function> ::= 'function ' <variable> '()' ':' <type> '{' <multiple statements> '}'
 // <multiple_statements> ::= <statement> (<statement>)*
-// <statement> ::== <function_call>';' | <initialization> | <assignment> | <if> | <while> | <print> | <block> | 'break;' | 'stop;'
+// <statement> ::== <initialization> | <assignment> | <if> | <while> | <print> | <block> | 'break;' | 'stop;' | <expression>';'
 
 // <initialization> ::== <type> <variable_name> ['=' <expression>]';'
 // <assignment> ::== <variable_access> '=' <expression>';'
@@ -44,6 +44,7 @@ extern char PARSE_ERROR_MESSAGE[];
 // <while> ::== 'while (' <expression> ')' <statement>
 // <print> ::== 'print(' <expression> ')'';'
 // <block> ::=  '{' <multiple_statements> '}'
+// <return> ::= 'return ' [<expression>]';' 
 
 program parse_program(char* str){
     // No parse init here
@@ -60,23 +61,6 @@ program parse_program(char* str){
     BOOL fatal = FALSE;
 
     while(TRUE){
-        parse_result_stmt statement = parse_statement(remaining);
-        if(statement.fatal){
-            fatal = TRUE;
-            break;
-        }
-        if(statement.valid){
-            if(first_statement == NULL){
-                first_statement = statement.statement;
-                last_statement = statement.statement;
-            }else{
-                last_statement->next_statement = statement.statement;
-                last_statement = last_statement->next_statement;
-            }
-            remaining = statement.remaining;
-            continue;
-        }
-
         parse_result_function function = parse_function(remaining);
         if(function.fatal){
             fatal = TRUE;
@@ -95,6 +79,23 @@ program parse_program(char* str){
             }
 
             remaining = function.remaining;
+            continue;
+        }
+
+        parse_result_stmt statement = parse_statement(remaining);
+        if(statement.fatal){
+            fatal = TRUE;
+            break;
+        }
+        if(statement.valid){
+            if(first_statement == NULL){
+                first_statement = statement.statement;
+                last_statement = statement.statement;
+            }else{
+                last_statement->next_statement = statement.statement;
+                last_statement = last_statement->next_statement;
+            }
+            remaining = statement.remaining;
             continue;
         }
 
@@ -160,5 +161,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TO DO: rearrange order of statement parsing to detect inits earlier (current problem is that it tries to parse inits as function calls)
-//TO DO: first arguments for function calls, then return values for function calls
+//TO DO: arguments for function calls, data creation during execution, i.e. proper reference tracking for arrays

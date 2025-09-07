@@ -7,13 +7,13 @@ struct expression_t;
 #include "variable_access.h"
 
 // Expressions
-typedef enum expr_type_e {Lit, Add, Sub, Mul, Div, Neg, Var_Acc, Bool_Neg, Eq, Lt, Lte} e_type;
+typedef enum expr_type_e {Lit, Add, Sub, Mul, Div, Neg, Var_Acc, Function_Call, Bool_Neg, Eq, Lt, Lte} e_type;
 
 typedef struct expression_t{
     e_type type;
     data data;                          // Value if it is literal
     data_type* data_type;               // For type expressions
-    struct variable_access_t* variable;                   // Name if it is variable
+    struct variable_access_t* variable; // Name if it is variable
     struct expression_t *expr_1;
     struct expression_t *expr_2;
     size_t line;                      // line at which this expression appears

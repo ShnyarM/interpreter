@@ -40,7 +40,7 @@ void write_var_not_init_error(char* variable_name, size_t line){
 }
 
 BOOL stop_next_execution(execution_result e){
-    return (!e.succesful || e.stop_execution || e.break_while);
+    return (!e.succesful || e.stop_execution || e.break_while || e.return_activated);
 }
 
 // Gets reference to variable
@@ -84,21 +84,60 @@ static data* access_variable(var_access* variable, dictionary* dict){
     return NULL;
 }
 
+execution_result run_function(char* function_name, size_t line){
+    execution_result exec = (execution_result){TRUE, FALSE, FALSE, FALSE, EMPTY_DATA};
+
+    data_access_result function_data = dict_get(&RUNNING_PROGRAM.functions, function_name);
+    if(!function_data.valid){
+        write_exec_error("Function has not been defined", line);
+        exec.succesful = FALSE;
+        return exec;
+    }
+    function* func = get_function_from_data(function_data.result);
+
+    dictionary function_dict = dict_get_extension(&GLOBAL_DICTIONARY);
+    execution_result function_exec = run_program(func->content, &function_dict);
+    free_dict(&function_dict);
+
+    if(function_exec.stop_execution || !function_exec.succesful) return function_exec;
+
+    if(!type_equality(function_exec.data.type, func->return_type)){
+        write_exec_error("Value which function call returned does not match the return type of the function.", line);
+        exec.succesful = FALSE;
+        return exec;
+    }
+
+    exec.data = function_exec.data;
+    return exec;
+}
+
 expr_eval_result eval_expr(expr* expression, dictionary* dict){
-    expr_eval_result res = (expr_eval_result){TRUE, EMPTY_DATA};
+    expr_eval_result res = (expr_eval_result){TRUE, EMPTY_DATA, FALSE};
     if(expression == NULL) return res;
 
     expr_eval_result value1 = eval_expr(expression->expr_1, dict);
     expr_eval_result value2 = eval_expr(expression->expr_2, dict);
+    
+    if(!value1.succesful || !value2.succesful){
+        res.succesful = FALSE;
+        return res;
+    }
+    if(value1.stop_execution || value2.stop_execution){
+        res.stop_execution = TRUE;
+        return res;
+    }
 
     BOOL both_num = is_data_number_type(value1.data) && is_data_number_type(value2.data);
     // Get number values incase they are numbers and are needed
     double num1 = GET_NUMBER_FROM_DATA(value1.data);
     double num2 = GET_NUMBER_FROM_DATA(value2.data);
 
-    if(!value1.succesful || !value2.succesful){
-        res.succesful = FALSE;
-        return res;
+    if(expression->type == Function_Call){
+        execution_result function_exec = run_function(expression->variable->name, expression->line);
+        
+        res.stop_execution = function_exec.stop_execution;
+        res.succesful = function_exec.succesful;
+        res.data = function_exec.data;
     }
 
     if(expression->type == Lit){
@@ -213,12 +252,16 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
 }
 
 execution_result run_single_statement(stmt* statement, dictionary* dict){
-    execution_result exec = {TRUE, FALSE, FALSE};
+    execution_result exec = {TRUE, FALSE, FALSE, FALSE, EMPTY_DATA};
     if(statement == NULL) return exec;
 
     expr_eval_result inner_expression = eval_expr(statement->expression, dict);
     if(!inner_expression.succesful){
         exec.succesful = FALSE;
+        return exec;
+    }
+    if(inner_expression.stop_execution){
+        exec.stop_execution = TRUE;
         return exec;
     }
 
@@ -269,17 +312,13 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
         printf("\n");
     }
 
-    if(statement->type == Function_Call){
-        data_access_result function_data = dict_get(&RUNNING_PROGRAM.functions, statement->variable->name);
-        if(!function_data.valid){
-            write_exec_error("Function has not been defined", statement->line);
-            exec.succesful = FALSE;
-            return exec;
-        }
+    if(statement->type == Return){
+        exec.data = inner_expression.data;
+        exec.return_activated = TRUE;
+    }
 
-        dictionary function_dict = dict_get_extension(&GLOBAL_DICTIONARY);
-        exec = run_program(function_data.result.value.function->content, &function_dict);
-        free_dict(&function_dict);
+    if(statement->type == Expression){
+        // Dont need to do anything, as expression has already been calculated further above
     }
 
     if(statement->type == If){
@@ -322,7 +361,6 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
         exec.stop_execution = TRUE;
     }
 
-    if(stop_next_execution(exec)) return exec;
     return exec;
 }
 
