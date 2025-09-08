@@ -11,3 +11,4 @@ typedef struct parse_result_statement_t{
 
 parse_result_stmt parse_multiple_statements(char* str);
 parse_result_stmt parse_statement(char* str);
+parse_result_stmt parse_block(char* str);

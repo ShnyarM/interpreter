@@ -14,3 +14,4 @@ expr* get_number_literal(double value);
 parse_result_expr parse_expr(char* str);
 parse_result_expr parse_variable_name(char* str);
 parse_result_expr parse_variable_access(char* str);
+parse_result_expr parse_expression_list(char* str);

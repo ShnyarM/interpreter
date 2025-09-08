@@ -334,15 +334,61 @@ static parse_result_expr parse_function_call(char* str){
         REVERT
     }
 
-    char* closing_bracket = char_follows(opening_bracket, ')', FALSE);
-    FATAL_CHECK_NULL_WITH_FREE_EXPR(closing_bracket, CLOSING_BRACKET_ERROR, variable.expression);
+    expr* arguments = NULL;
+    char* remaining = opening_bracket;
+
+    // Get optional arguments
+    parse_result_expr arguments_parse = parse_expression_list(opening_bracket);
+    FATAL_CHECK_WITH_FREE_EXPR(arguments_parse, variable.expression);
+    if(arguments_parse.valid){
+        arguments = arguments_parse.expression;
+        remaining = arguments_parse.remaining;
+    }
+
+    char* closing_bracket = char_follows(remaining, ')', FALSE);
+    if(closing_bracket == NULL){
+        free_expr(variable.expression);
+        free_expr(arguments);
+        FATAL_REVERT(CLOSING_BRACKET_ERROR);
+    }
 
     expr* expr = expr_get_plain(Function_Call, EMPTY_DATA, NULL, NULL);
     expr->variable = variable.expression->variable;
+    expr->expr_1 = arguments;
     
     variable.expression->variable = NULL; // remove since variable access still gets used in statement, if not removed it would get freed
     free_expr(variable.expression);
     return PARSE_RESULT_EXPR(expr, closing_bracket);
+}
+
+parse_result_expr parse_expression_list(char* str){
+    PARSE_INIT
+
+    parse_result_expr first_expression = parse_expr(str);
+    FATAL_CHECK(first_expression);
+    if(!first_expression.valid) REVERT;
+
+    expr* first = first_expression.expression;
+    expr* last = first;
+    char* remaining = first_expression.remaining;
+
+    while(TRUE){
+        char* comma = char_follows(remaining, ',', FALSE);
+        if(comma == NULL) break;
+
+        parse_result_expr expression = parse_expr(comma);
+        FATAL_CHECK_WITH_FREE_EXPR(expression, first);
+        if(!expression.valid){
+            free_expr(first);
+            FATAL_REVERT("Expected an expression after ',' keyword in expression list.");
+        }
+
+        last->next = expression.expression;
+        last = expression.expression;
+        remaining = expression.remaining;
+    }
+
+    return PARSE_RESULT_EXPR(first, remaining);
 }
 
 static parse_result_expr parse_parens(char *str)

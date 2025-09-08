@@ -12,10 +12,10 @@ typedef enum expr_type_e {Lit, Add, Sub, Mul, Div, Neg, Var_Acc, Function_Call, 
 typedef struct expression_t{
     e_type type;
     data data;                          // Value if it is literal
-    data_type* data_type;               // For type expressions
-    struct variable_access_t* variable; // Name if it is variable
+    struct variable_access_t* variable; // variable_access
     struct expression_t *expr_1;
     struct expression_t *expr_2;
+    struct expression_t *next;          // If it is part of a linked list of expressions
     size_t line;                      // line at which this expression appears
 } expr;
 

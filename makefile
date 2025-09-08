@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall
+CFLAGS = -Wall -O3
 
 OBJS = _parser_helper.o types.o data.o expression.o statement.o dictionary.o function.o variable_access.o type_parser.o expr_parser.o stmt_parser.o function_parser.o executor.o main.o helper.o 
 

@@ -1,0 +1,25 @@
+number d = 10;
+function add(number a, number b, number c):number{
+    d=d+1;
+    return a+b+c;
+}
+
+function getfive(){
+    return add(2, 2, 1);
+}
+
+function getsix(){
+    return 6;
+}
+
+print(add(getfive(), getsix(), 8));
+
+print(d);
+number i = 0;
+while(i < 100){
+    number x = add(getfive(), getsix(), 8);
+    d=x+d;
+    i = add(i, 1, 0);
+}
+
+print(d);

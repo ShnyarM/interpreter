@@ -84,7 +84,9 @@ static data* access_variable(var_access* variable, dictionary* dict){
     return NULL;
 }
 
-execution_result run_function(char* function_name, size_t line){
+// calling dict is the dictionary under which the function is being called
+// used to evaluate arguments
+execution_result run_function(char* function_name, size_t line, expr* arguments, dictionary* calling_dict){
     execution_result exec = (execution_result){TRUE, FALSE, FALSE, FALSE, EMPTY_DATA};
 
     data_access_result function_data = dict_get(&RUNNING_PROGRAM.functions, function_name);
@@ -96,6 +98,46 @@ execution_result run_function(char* function_name, size_t line){
     function* func = get_function_from_data(function_data.result);
 
     dictionary function_dict = dict_get_extension(&GLOBAL_DICTIONARY);
+
+    // evaluate arguments and put them into dictionary
+    function_parameter* current_parameter = func->parameters;
+    expr* current_argument = arguments;
+    while(TRUE){
+        if(current_parameter == NULL && current_argument == NULL) break;
+        if(current_parameter == NULL || current_argument == NULL){
+            write_exec_error("Number of arguments in function call does not match number of parameters in function definition.", line);
+            exec.succesful = FALSE;
+            free_dict(&function_dict);
+            return exec;
+        }
+
+        expr_eval_result argument_value = eval_expr(current_argument, calling_dict);
+        if(!argument_value.succesful || argument_value.stop_execution){
+            exec.succesful = argument_value.succesful;
+            exec.stop_execution = argument_value.stop_execution;
+            return exec;
+        }
+
+        if(!type_equality(argument_value.data.type, current_parameter->type)){
+            write_exec_error("Data type of argument does not match declared data type in function definition.", line);
+            exec.succesful = FALSE;
+            free_dict(&function_dict);
+            return exec;
+        }
+
+        dict_add(&function_dict, current_parameter->name, current_parameter->type);
+        data_update_result update = dict_update(&function_dict, current_parameter->name, argument_value.data);
+        if(!update.valid){
+            write_exec_error("This shouldnt be able to happen, something wrong.", line);
+            exec.succesful = FALSE;
+            free_dict(&function_dict);
+            return exec;
+        }
+
+        current_parameter = current_parameter->next;
+        current_argument = current_argument->next;
+    }
+
     execution_result function_exec = run_program(func->content, &function_dict);
     free_dict(&function_dict);
 
@@ -115,6 +157,16 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
     expr_eval_result res = (expr_eval_result){TRUE, EMPTY_DATA, FALSE};
     if(expression == NULL) return res;
 
+    // This is placed earlier, since expressions shouldnt get evaluated in this function
+    if(expression->type == Function_Call){
+        execution_result function_exec = run_function(expression->variable->name, expression->line, expression->expr_1, dict);
+        
+        res.stop_execution = function_exec.stop_execution;
+        res.succesful = function_exec.succesful;
+        res.data = function_exec.data;
+        return res;
+    }
+
     expr_eval_result value1 = eval_expr(expression->expr_1, dict);
     expr_eval_result value2 = eval_expr(expression->expr_2, dict);
     
@@ -131,14 +183,6 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
     // Get number values incase they are numbers and are needed
     double num1 = GET_NUMBER_FROM_DATA(value1.data);
     double num2 = GET_NUMBER_FROM_DATA(value2.data);
-
-    if(expression->type == Function_Call){
-        execution_result function_exec = run_function(expression->variable->name, expression->line);
-        
-        res.stop_execution = function_exec.stop_execution;
-        res.succesful = function_exec.succesful;
-        res.data = function_exec.data;
-    }
 
     if(expression->type == Lit){
         res.data = expression->data;

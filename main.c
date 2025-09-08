@@ -21,8 +21,13 @@ extern char PARSE_ERROR_MESSAGE[];
 // <expression> ::= <add-expr> (('==' | '<' | '<=') <add-expr>)*
 // <add-expr> ::= <mul-expr> (('+' | '-') <mul-expr>)*
 // <mul-expr> ::= <atomic> (('*' | '/') <atomic>)*
-// <atomic> ::= ['-' | '!'](<literal> | <variable_access> | <parens> | <function_call>)
+// <atomic> ::= ['-' | '!'](<literal> | <variable_access> | <parens> | <function_call> | <array>)
 // <parens> ::= '(' <expression> ')'
+
+// <function_call> ::== <variable_name>'('[<expression_listg>]')'
+
+// <array> ::== '[' [<expression_list>] ']'
+// <expression_list> ::== <expression> (',' <expression>)*
 
 // <variable_name> ::== ('_' | <letter>)('_' | <letter> | <digit>)*
 // <variable_access> ::== <variable_name>( ('['<expression']') )*
@@ -30,10 +35,11 @@ extern char PARSE_ERROR_MESSAGE[];
 // <type> ::== <atomic_type>('[]')*
 // <atomic_type> ::== 'number' | 'any'
 
-// <function_call> ::== <variable_name>'()'
-
 // <program> ::= (<statement> | <function>)*
-// <function> ::= 'function ' <variable> '()' ':' <type> '{' <multiple statements> '}'
+
+// <function> ::= 'function ' <variable_name> '(' [<parameter_list>] ')' [':' <type>] '{' <multiple statements> '}'
+// <parameter_list> ::= <type> <variable_name> (',' <type> <variable_name>)*
+
 // <multiple_statements> ::= <statement> (<statement>)*
 // <statement> ::== <initialization> | <assignment> | <if> | <while> | <print> | <block> | 'break;' | 'stop;' | <expression>';'
 
@@ -161,4 +167,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TO DO: arguments for function calls, data creation during execution, i.e. proper reference tracking for arrays
+//TO DO: data creation during execution, i.e. proper reference tracking for arrays

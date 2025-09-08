@@ -282,7 +282,7 @@ static parse_result_stmt parse_return(char* str){
     return PARSE_RESULT_STMT(statement, semi_colon);
 }
 
-static parse_result_stmt parse_block(char* str){
+parse_result_stmt parse_block(char* str){
     PARSE_INIT
 
     char* curly_bracket_open = char_follows(str, '{', FALSE);
