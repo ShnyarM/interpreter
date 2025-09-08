@@ -5,11 +5,30 @@
 
 #define ARRAY_SIZE_INCREASE_PADDING 10 //When increasing the size of an array to a specific value, always add a padding of the specified value
 
+void data_array_add_reference(data_array* arr);
+void data_array_remove_reference(data_array* arr);
+
+void data_add_reference(data* d){
+    if(d == NULL) return;
+    if(is_data_of_kind_array(*d)) data_array_add_reference(get_array_from_data(*d));
+}
+
+void data_remove_reference(data* d){
+    if(d == NULL) return;
+    if(is_data_of_kind_array(*d)) data_array_remove_reference(get_array_from_data(*d));
+}
+
+void data_copy_entire_data(data* destination, data value){
+    data_add_reference(&value);
+    destination->value = value.value;
+    destination->type = copy_of_type(value.type);
+}
+
 data_update_result data_update_value(data* orig, data new_value){
     if(!type_equality(orig->type, new_value.type)) return (data_update_result){FALSE, DifferentType};
     // Check if new_value or old value is array, to properly add and remove references
-    if(is_data_of_kind_array(new_value)) data_array_add_reference(new_value.value.arr);
-    if(is_data_of_kind_array(*orig)) data_array_remove_reference(orig->value.arr);
+    data_add_reference(&new_value);
+    data_remove_reference(orig);
 
     orig->value = new_value.value;
 
@@ -159,9 +178,7 @@ void data_array_remove_reference(data_array* arr){
 }
 
 void free_data(data data){
-    if(data.type->kind == Type_Kind_Array){
-        data_array_remove_reference(data.value.arr);
-    }
+    data_remove_reference(&data);
 
     if(data.type->kind == Type_Kind_Function){
         free_function(data.value.function);

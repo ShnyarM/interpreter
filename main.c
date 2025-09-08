@@ -167,4 +167,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TO DO: data creation during execution, i.e. proper reference tracking for arrays
+//TO DO: array literals, cleaning up executor.c

@@ -55,6 +55,9 @@ typedef struct data_update_result_t{
 } data_update_result;
 
 void free_data(data data);
+void data_add_reference(data* d);
+void data_remove_reference(data* d);
+void data_copy_entire_data(data* destination, data value);
 data_update_result data_update_value(data* orig, data new_value);
 BOOL is_data_of_kind_array(data d);
 BOOL is_data_number_type(data d);
@@ -83,6 +86,4 @@ data_array* data_array_new(data_type* type);
 data* data_array_get_reference(data_array* arr, int index);
 int data_array_get_size(data_array* arr);
 void data_array_print(data_array* arr);
-void data_array_add_reference(data_array* arr);
-void data_array_remove_reference(data_array* arr);
 void free_data_array(data_array* arr);
