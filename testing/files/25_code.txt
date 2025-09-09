@@ -1,0 +1,15 @@
+number i = 0;
+while([1, 2, 4, 5]){
+    i = i+1;
+    if(1000<i) break;
+}
+
+function getArray():number[]{
+    return [1, 2, 3, 4];
+}
+
+i = 0;
+while(getArray()){
+    i = i+1;
+    if(1000<i) break;
+}

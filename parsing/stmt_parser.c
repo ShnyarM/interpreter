@@ -74,7 +74,7 @@ static parse_result_stmt parse_assignment(char* str){
         FATAL_REVERT(SEMICOLON_ERROR)
     }
 
-    stmt* statement = get_ass_statement(variable.expression->variable, expression.expression, NULL);
+    stmt* statement = stmt_get_ass(variable.expression->variable, expression.expression, NULL);
 
     variable.expression->variable = NULL; // remove since variable access still gets used in statement, if not removed it would get freed
     free_expr(variable.expression); //Free expression as we dont need it, only needed variable name
@@ -179,7 +179,7 @@ static parse_result_stmt parse_if(char* str){
     }
 
     // construct statement which will be returned if else fails
-    stmt* final_stmt = get_if_statement(expression_1.expression, statement.statement, NULL, NULL);
+    stmt* final_stmt = stmt_get_if(expression_1.expression, statement.statement, NULL, NULL);
     parse_result_stmt final = PARSE_RESULT_STMT(final_stmt, statement.remaining);
 
     //try to get else statement
@@ -217,7 +217,7 @@ static parse_result_stmt parse_while(char* str){
         FATAL_REVERT("Invalid statement inside while block.")
     }
 
-    stmt* final_stmt = get_while_statement(expression_1.expression, statement.statement, NULL);
+    stmt* final_stmt = stmt_get_while(expression_1.expression, statement.statement, NULL);
     parse_result_stmt final = PARSE_RESULT_STMT(final_stmt, statement.remaining);
 
     return final;
@@ -239,7 +239,7 @@ static parse_result_stmt parse_print(char* str){
     char* last = char_follows(next, ';', FALSE);
     FATAL_CHECK_NULL_WITH_FREE_EXPR(last, SEMICOLON_ERROR, expression.expression)
 
-    stmt* statement = get_print_statement(expression.expression, NULL);
+    stmt* statement = stmt_get_print(expression.expression, NULL);
     return PARSE_RESULT_STMT(statement, last);
 }
 
@@ -254,7 +254,7 @@ static parse_result_stmt parse_return(char* str){
         char* semi_c = char_follows(return_keyword, ';', FALSE);
         if(semi_c == NULL) REVERT //Revert, since it could still be a variable name
 
-        stmt* statement = stmt_get_plain(Return);
+        stmt* statement = stmt_get_plain(Stmt_Return);
 
         return PARSE_RESULT_STMT(statement, semi_c);
     }
@@ -276,7 +276,7 @@ static parse_result_stmt parse_return(char* str){
         FATAL_REVERT(SEMICOLON_ERROR);
     }
 
-    stmt* statement = stmt_get_plain(Return);
+    stmt* statement = stmt_get_plain(Stmt_Return);
     statement->expression = return_expression;
 
     return PARSE_RESULT_STMT(statement, semi_colon);
@@ -295,7 +295,7 @@ parse_result_stmt parse_block(char* str){
     char* curly_bracket_close = char_follows(statements.remaining, '}', FALSE);
     FATAL_CHECK_NULL_WITH_FREE_STMT(curly_bracket_close, CLOSING_CURLY_BRACKET_ERROR, statements.statement)
 
-    stmt* final_statement = get_block_statement(statements.statement, NULL);
+    stmt* final_statement = stmt_get_block(statements.statement, NULL);
     return PARSE_RESULT_STMT(final_statement, curly_bracket_close);
 }
 
@@ -312,7 +312,7 @@ parse_result_stmt parse_expression_statement(char* str){
         FATAL_REVERT(SEMICOLON_ERROR);
     }
 
-    stmt* statement = stmt_get_plain(Expression);
+    stmt* statement = stmt_get_plain(Stmt_Expression);
     statement->expression = expression.expression;
     return PARSE_RESULT_STMT(statement, semi_colon);
 }
@@ -346,8 +346,10 @@ parse_result_stmt parse_statement(char* str){
     char* break_statement = word_follows(str, "break", FALSE);
     if(break_statement != NULL){
         char* last = char_follows(break_statement, ';', FALSE);
-        FATAL_CHECK_NULL(last, SEMICOLON_ERROR)
-        return PARSE_RESULT_STMT(stmt_get_plain(Brk), last);
+        if(last != NULL) return PARSE_RESULT_STMT(stmt_get_plain(Stmt_Brk), last);
+        else{ // Only throw fatal error if white space follows
+            if(is_whitespace(*break_statement)) FATAL_REVERT(SEMICOLON_ERROR);
+        }
     }
 
     // Stop statement
@@ -355,7 +357,7 @@ parse_result_stmt parse_statement(char* str){
     if(stop != NULL){
         char* last = char_follows(stop, ';', FALSE);
         FATAL_CHECK_NULL(last, SEMICOLON_ERROR)
-        return PARSE_RESULT_STMT(stmt_get_plain(Stop), last);
+        return PARSE_RESULT_STMT(stmt_get_plain(Stmt_Stop), last);
     }
 
     parse_result_stmt block = parse_block(str);

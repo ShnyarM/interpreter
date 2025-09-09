@@ -54,7 +54,7 @@ parse_result_type parse_type(char* str){
             FATAL_REVERT(CLOSING_SQUARE_BRACKET_ERROR);
         }
 
-        current_type = get_array_type(current_type);
+        current_type = types_get_array_type(current_type);
         remaining = close_square_brackets;
     }
 

@@ -15,8 +15,8 @@ stmt* stmt_get_plain(s_type type){
     return statement;
 }
 
-stmt* get_ass_statement(var_access* variable, expr* expr, stmt* next_statement){
-    stmt* statement = stmt_get_plain(Ass);
+stmt* stmt_get_ass(var_access* variable, expr* expr, stmt* next_statement){
+    stmt* statement = stmt_get_plain(Stmt_Ass);
     statement->variable = variable;
     statement->expression = expr;
     statement->next_statement = next_statement;
@@ -25,7 +25,7 @@ stmt* get_ass_statement(var_access* variable, expr* expr, stmt* next_statement){
 
 // takes ownership of data_type
 stmt* stmt_get_init_stmt(var_access* variable, expr* value, data_type* type, stmt* next_statement){
-    stmt* statement = stmt_get_plain(Init);
+    stmt* statement = stmt_get_plain(Stmt_Init);
     statement->variable = variable;
     statement->expression = value;
     statement->next_statement = next_statement;
@@ -33,8 +33,8 @@ stmt* stmt_get_init_stmt(var_access* variable, expr* value, data_type* type, stm
     return statement;
 }
 
-stmt* get_if_statement(expr* condition, stmt* true_branch, stmt* false_branch, stmt* next_statement){
-    stmt* statement = stmt_get_plain(If);
+stmt* stmt_get_if(expr* condition, stmt* true_branch, stmt* false_branch, stmt* next_statement){
+    stmt* statement = stmt_get_plain(Stmt_If);
     statement->expression = condition;
     statement->next_statement = next_statement;
     statement->inner_stmt_1 = true_branch;
@@ -42,23 +42,23 @@ stmt* get_if_statement(expr* condition, stmt* true_branch, stmt* false_branch, s
     return statement;
 }
 
-stmt* get_while_statement(expr* condition, stmt* true_branch, stmt* next_statement){
-    stmt* statement = stmt_get_plain(While);
+stmt* stmt_get_while(expr* condition, stmt* true_branch, stmt* next_statement){
+    stmt* statement = stmt_get_plain(Stmt_While);
     statement->expression = condition;
     statement->next_statement = next_statement;
     statement->inner_stmt_1 = true_branch;
     return statement;
 }
 
-stmt* get_print_statement(expr* expression, stmt* next_statement){
-    stmt* statement = stmt_get_plain(Print);
+stmt* stmt_get_print(expr* expression, stmt* next_statement){
+    stmt* statement = stmt_get_plain(Stmt_Print);
     statement->expression = expression;
     statement->next_statement = next_statement;
     return statement;
 }
 
-stmt* get_block_statement(stmt* inside, stmt* next_statement){
-    stmt* statement = stmt_get_plain(Block);
+stmt* stmt_get_block(stmt* inside, stmt* next_statement){
+    stmt* statement = stmt_get_plain(Stmt_Block);
     statement->inner_stmt_1 = inside;
     statement->next_statement = next_statement;
     return statement;

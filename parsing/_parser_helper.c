@@ -29,11 +29,11 @@ token_result get_next_char(char* str){
 }
 
 e_type char_to_operator(char c){
-    if(c == '+') return Add;
-    if(c == '-') return Sub;
-    if(c == '*') return Mul;
-    if(c == '/') return Div;
-    return Add;
+    if(c == '+') return Expr_Add;
+    if(c == '-') return Expr_Sub;
+    if(c == '*') return Expr_Mul;
+    if(c == '/') return Expr_Div;
+    return Expr_Add;
 }
 
 // If char doesn't follow, then return NULL, else return pointer after char

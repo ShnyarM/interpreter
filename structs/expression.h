@@ -7,7 +7,7 @@ struct expression_t;
 #include "variable_access.h"
 
 // Expressions
-typedef enum expr_type_e {Lit, Add, Sub, Mul, Div, Neg, Var_Acc, Function_Call, Bool_Neg, Eq, Lt, Lte} e_type;
+typedef enum expr_type_e {Expr_Lit, Expr_Add, Expr_Sub, Expr_Mul, Expr_Div, Expr_Neg, Expr_Var_Acc, Expr_Function_Call, Expr_Array, Expr_Bool_Neg, Expr_Eq, Expr_Lt, Expr_Lte} e_type;
 
 typedef struct expression_t{
     e_type type;
@@ -21,5 +21,5 @@ typedef struct expression_t{
 
 expr* expr_get_plain(e_type type, data data, expr *ex_1, expr *ex_2);
 expr* expr_get_var_name(char *name);
-expr* expr_ger_number_literal(double value);
+expr* expr_get_number_literal(double value);
 void free_expr(expr *e);

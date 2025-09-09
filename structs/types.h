@@ -16,12 +16,13 @@ typedef struct data_type_t {
 } data_type;
 
 void free_type(data_type* t);
-data_type* get_atomic_number_type();
-data_type* get_array_type(data_type* inner);
-data_type* copy_of_type(data_type* t);
-BOOL type_equality(data_type* t1, data_type* t2);
-BOOL is_type_array(data_type* t);
-BOOL is_type_number(data_type* t);
+data_type* types_get_array_type(data_type* inner);
+data_type* types_copy(data_type* t);
+BOOL types_equality(data_type* t1, data_type* t2);
+BOOL types_can_be_assigned_to(data_type* lhs, data_type* rhs);
+BOOL types_is_array(data_type* t);
+BOOL types_is_number(data_type* t);
+BOOL types_is_any(data_type* t);
 
 extern data_type GLOBAL_INVALID_TYPE;
 extern data_type GLOBAL_ANY_TYPE;

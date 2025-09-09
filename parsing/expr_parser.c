@@ -23,6 +23,8 @@ extern char OPENING_BRACKET_ERROR[];
 extern char CLOSING_BRACKET_ERROR[];
 extern char OPENING_CURLY_BRACKET_ERROR[];
 extern char CLOSING_CURLY_BRACKET_ERROR[];
+extern char OPENING_SQUARE_BRACKET_ERROR[];
+extern char CLOSING_SQUARE_BRACKET_ERROR[];
 
 extern size_t MAX_VARIABLE_LENGTH;
 extern size_t LINE_COUNTER;
@@ -33,6 +35,7 @@ static parse_result_expr parse_atomic(char *str);
 static parse_result_expr parse_integer(char *str);
 static parse_result_expr parse_parens(char *str);
 static parse_result_expr parse_function_call(char* str);
+static parse_result_expr parse_array(char* str);
 
 parse_result_expr parse_expr(char *str)
 {   
@@ -64,16 +67,16 @@ parse_result_expr parse_expr(char *str)
                     break;
                 }
 
-                operator= Lt;
+                operator=Expr_Lt;
             }
             else
             {
-                operator= Lte;
+                operator= Expr_Lte;
             }
         }
         else
         {
-            operator= Eq;
+            operator= Expr_Eq;
         }
 
         parse_result_expr next_add_expr = parse_add_expr(next);
@@ -180,7 +183,7 @@ static parse_result_expr parse_atomic(char *str)
         FATAL_CHECK(atomic)
         if (atomic.valid)
         {
-            expr *neg = expr_get_plain(Neg, EMPTY_DATA, atomic.expression, NULL);
+            expr *neg = expr_get_plain(Expr_Neg, EMPTY_DATA, atomic.expression, NULL);
             atomic.expression = neg;
             return atomic;
         }
@@ -191,7 +194,7 @@ static parse_result_expr parse_atomic(char *str)
         FATAL_CHECK(atomic)
         if (atomic.valid)
         {
-            expr *bool_neg = expr_get_plain(Bool_Neg, EMPTY_DATA, atomic.expression, NULL);
+            expr *bool_neg = expr_get_plain(Expr_Bool_Neg, EMPTY_DATA, atomic.expression, NULL);
             atomic.expression = bool_neg;
             return atomic;
         }
@@ -212,6 +215,11 @@ static parse_result_expr parse_atomic(char *str)
     FATAL_CHECK(variable)
     if (variable.valid)
         return variable;
+
+    parse_result_expr array = parse_array(str);
+    FATAL_CHECK(array)
+    if (array.valid)
+        return array;
 
     parse_result_expr parens = parse_parens(str);
     FATAL_CHECK(parens)
@@ -245,7 +253,7 @@ static parse_result_expr parse_integer(char *str)
         str--;
     }
 
-    expr *literal = expr_get_plain(Lit, NUMBER_DATA((double)value), NULL, NULL);
+    expr *literal = expr_get_plain(Expr_Lit, NUMBER_DATA((double)value), NULL, NULL);
     return PARSE_RESULT_EXPR(literal, str_end);
 }
 
@@ -352,7 +360,7 @@ static parse_result_expr parse_function_call(char* str){
         FATAL_REVERT(CLOSING_BRACKET_ERROR);
     }
 
-    expr* expr = expr_get_plain(Function_Call, EMPTY_DATA, NULL, NULL);
+    expr* expr = expr_get_plain(Expr_Function_Call, EMPTY_DATA, NULL, NULL);
     expr->variable = variable.expression->variable;
     expr->expr_1 = arguments;
     
@@ -389,6 +397,30 @@ parse_result_expr parse_expression_list(char* str){
     }
 
     return PARSE_RESULT_EXPR(first, remaining);
+}
+
+static parse_result_expr parse_array(char* str){
+    PARSE_INIT
+
+    char* square_bracket = char_follows(str, '[', FALSE);
+    if(square_bracket == NULL) REVERT
+
+    // get optional expression list
+    expr* list = NULL;
+    char* remaining = square_bracket;
+
+    parse_result_expr parse_list = parse_expression_list(square_bracket);
+    FATAL_CHECK(parse_list);
+    if(parse_list.valid){
+        list = parse_list.expression;
+        remaining = parse_list.remaining;
+    }
+
+    char* closing_bracket = char_follows(remaining, ']', FALSE);
+    FATAL_CHECK_NULL_WITH_FREE_EXPR(closing_bracket, CLOSING_SQUARE_BRACKET_ERROR, list);
+
+    expr* expression = expr_get_plain(Expr_Array, EMPTY_DATA, list, NULL);
+    return PARSE_RESULT_EXPR(expression, closing_bracket);
 }
 
 static parse_result_expr parse_parens(char *str)

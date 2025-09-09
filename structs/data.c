@@ -10,22 +10,22 @@ void data_array_remove_reference(data_array* arr);
 
 void data_add_reference(data* d){
     if(d == NULL) return;
-    if(is_data_of_kind_array(*d)) data_array_add_reference(get_array_from_data(*d));
+    if(data_is_of_kind_array(*d)) data_array_add_reference(data_get_array_from_data(*d));
 }
 
 void data_remove_reference(data* d){
     if(d == NULL) return;
-    if(is_data_of_kind_array(*d)) data_array_remove_reference(get_array_from_data(*d));
+    if(data_is_of_kind_array(*d)) data_array_remove_reference(data_get_array_from_data(*d));
 }
 
 void data_copy_entire_data(data* destination, data value){
     data_add_reference(&value);
     destination->value = value.value;
-    destination->type = copy_of_type(value.type);
+    destination->type = types_copy(value.type);
 }
 
 data_update_result data_update_value(data* orig, data new_value){
-    if(!type_equality(orig->type, new_value.type)) return (data_update_result){FALSE, DifferentType};
+    if(!types_can_be_assigned_to(orig->type, new_value.type)) return (data_update_result){FALSE, DifferentType};
     // Check if new_value or old value is array, to properly add and remove references
     data_add_reference(&new_value);
     data_remove_reference(orig);
@@ -35,33 +35,34 @@ data_update_result data_update_value(data* orig, data new_value){
     return (data_update_result){TRUE, NoFailure};
 }
 
-BOOL is_empty_data(data d){
-    return type_equality(d.type, &GLOBAL_INVALID_TYPE) && d.value.number == 0;
+BOOL data_is_empty(data d){
+    return types_equality(d.type, &GLOBAL_INVALID_TYPE) && d.value.number == 0;
 }
 
-BOOL is_data_of_kind_array(data d){
+BOOL data_is_of_kind_array(data d){
     if(d.type == NULL) return FALSE;
-    return is_type_array(d.type);
+    return types_is_array(d.type);
 }
 
-BOOL is_data_number_type(data d){
+BOOL data_is_number_type(data d){
     if(d.type == NULL) return FALSE;
-    return is_type_number(d.type);
+    return types_is_number(d.type);
 }
 
-data_array* get_array_from_data(data d){
+data_array* data_get_array_from_data(data d){
     return d.value.arr;
 }
 
-function* get_function_from_data(data d){
+function* data_get_function_from_data(data d){
     return d.value.function;
 }
 
 // Returns a default value for a given data type
 data_value data_default_value(data_type* type){
-    if(is_type_number(type)) return (data_value){.number=0};
-    if(is_type_array(type)){
-        data_array* arr = data_array_new(type);
+    if(types_is_any(type)) return (data_value){.number=0};
+    if(types_is_number(type)) return (data_value){.number=0};
+    if(types_is_array(type)){
+        data_array* arr = data_array_new(type->inner_type);
         return (data_value){.arr=arr};
     }
 
@@ -69,9 +70,9 @@ data_value data_default_value(data_type* type){
 }
 
 void data_print(data d){
-    if(is_data_of_kind_array(d)){ //If its array, print every value
-        data_array_print(get_array_from_data(d));
-    }else if(is_empty_data(d)){
+    if(data_is_of_kind_array(d)){ //If its array, print every value
+        data_array_print(data_get_array_from_data(d));
+    }else if(data_is_empty(d)){
         printf("VOID");
     }else{
         printf("%.15g", GET_NUMBER_FROM_DATA(d));
@@ -87,25 +88,9 @@ data_array* data_array_new(data_type* type){
     arr->capacity = 0;
     arr->references = 1;
     arr->list = NULL;
-    arr->type = copy_of_type(type);
+    arr->type = types_copy(type);
     return arr;
 }
-
-// Return true if it was successful
-/*data_update_result data_array_set(data_array* arr, int index, data data){
-    if(index < 0) return (data_update_result){FALSE, NotInIndexRange};
-
-    data_update_result result = data_update_value(&(arr->list[index]), data);
-    return result;
-}*/
-
-/*data_access_result data_array_get(data_array* arr, int index){
-    if(index < 0){
-        return INVALID_DATA_ACCESS_RESULT;
-    }
-
-    return (data_access_result){TRUE, arr->list[index]};
-}*/
 
 void data_array_increase_size(data_array* arr, int new_needed_capacity){
     int possibility1 = arr->size*2;
@@ -120,8 +105,8 @@ void data_array_increase_size(data_array* arr, int new_needed_capacity){
     }
 
     for(int i = arr->capacity; i < actual_new_capacity; i++){
-        new_list[i].type = copy_of_type(arr->type->inner_type);
-        new_list[i].value = data_default_value(arr->type->inner_type);
+        new_list[i].type = types_copy(arr->type);
+        new_list[i].value = data_default_value(arr->type);
     }
 
     free(arr->list);
@@ -142,6 +127,12 @@ data* data_array_get_reference(data_array* arr, int index){
 
     if(index+1 > arr->size) arr->size = index+1;
     return &arr->list[index];
+}
+
+// type gets copied
+void data_array_set_new_type(data_array* arr, data_type* new_type){
+    free_type(arr->type);
+    arr->type = types_copy(new_type);
 }
 
 void data_array_print(data_array* arr){

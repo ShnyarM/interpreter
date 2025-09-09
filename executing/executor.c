@@ -18,9 +18,6 @@ extern program RUNNING_PROGRAM;
 
 expr_eval_result eval_expr(expr* expression, dictionary* dict);
 
-//TO DO: Maybe clean up code here, i.e. clean up all data frees and stop executions
-
-
 void write_exec_error(char* message, size_t line){
     if(*message == 0) return;
 
@@ -58,39 +55,31 @@ static data* access_variable(var_access* variable, dictionary* dict){
         data* var_value = dict_get_reference(dict, variable->name);
         if(var_value == NULL){
             write_var_not_init_error(variable->name, variable->line);
-            data_remove_reference(inner_access);
             return NULL;
         }
 
-        data_add_reference(var_value);
         return var_value;
     }else if(variable->type == Var_Access_Array){
         expr_eval_result index_value = eval_expr(variable->index, dict); // TO DO
         if(!index_value.succesful || inner_access == NULL) return NULL;
         
-        if(!is_data_of_kind_array(*inner_access)){
+        if(!data_is_of_kind_array(*inner_access)){
             write_exec_error("Variable can't be accessed as an array, as it is not an array.", variable->line);
-            data_remove_reference(inner_access);
             return NULL;
         }
 
-        if(!is_data_number_type(index_value.data)){
+        if(!data_is_number_type(index_value.data)){
             write_exec_error("Index of array access is not of type number.", variable->line);
-            data_remove_reference(inner_access);
             return NULL;
         }
 
         if(GET_NUMBER_FROM_DATA(index_value.data) < 0){
             write_exec_error("Arrays cannot be accessed with a negative index.", variable->line);
-            data_remove_reference(inner_access);
             return NULL;
         }
 
-        data* arr_access_value = data_array_get_reference(get_array_from_data(*inner_access), (int)(index_value.data.value.number));
+        data* arr_access_value = data_array_get_reference(data_get_array_from_data(*inner_access), (int)(index_value.data.value.number));
         if(arr_access_value == NULL) return NULL;
-
-        data_remove_reference(inner_access);
-        data_add_reference(arr_access_value);
         return arr_access_value;
     }
 
@@ -101,16 +90,15 @@ static data* access_variable(var_access* variable, dictionary* dict){
 // used to evaluate arguments
 execution_result run_function(char* function_name, size_t line, expr* arguments, dictionary* calling_dict){
     execution_result exec = (execution_result){TRUE, FALSE, FALSE, FALSE, EMPTY_DATA};
+    execution_result function_exec  = (execution_result){TRUE, FALSE, FALSE, FALSE, EMPTY_DATA};
+    dictionary function_dict = dict_get_extension(&GLOBAL_DICTIONARY);
 
     data_access_result function_data = dict_get(&RUNNING_PROGRAM.functions, function_name);
     if(!function_data.valid){
         write_exec_error("Function has not been defined", line);
-        exec.succesful = FALSE;
-        return exec;
+        goto UNSUCCESSFUL_FUNCTION_EXECUTION;
     }
-    function* func = get_function_from_data(function_data.result);
-
-    dictionary function_dict = dict_get_extension(&GLOBAL_DICTIONARY);
+    function* func = data_get_function_from_data(function_data.result);
 
     // evaluate arguments and put them into dictionary
     function_parameter* current_parameter = func->parameters;
@@ -119,9 +107,7 @@ execution_result run_function(char* function_name, size_t line, expr* arguments,
         if(current_parameter == NULL && current_argument == NULL) break;
         if(current_parameter == NULL || current_argument == NULL){
             write_exec_error("Number of arguments in function call does not match number of parameters in function definition.", line);
-            exec.succesful = FALSE;
-            free_dict(&function_dict);
-            return exec;
+            goto UNSUCCESSFUL_FUNCTION_EXECUTION;    
         }
 
         expr_eval_result argument_value = eval_expr(current_argument, calling_dict);
@@ -132,22 +118,18 @@ execution_result run_function(char* function_name, size_t line, expr* arguments,
             return exec;
         }
 
-        if(!type_equality(argument_value.data.type, current_parameter->type)){
+        if(!types_can_be_assigned_to(current_parameter->type, argument_value.data.type)){
             write_exec_error("Data type of argument does not match declared data type in function definition.", line);
-            exec.succesful = FALSE;
-            free_dict(&function_dict);
             free_data(argument_value.data);
-            return exec;
+            goto UNSUCCESSFUL_FUNCTION_EXECUTION;
         }
 
         dict_add(&function_dict, current_parameter->name, current_parameter->type);
         data_update_result update = dict_update(&function_dict, current_parameter->name, argument_value.data);
         if(!update.valid){
             write_exec_error("This shouldnt be able to happen, something wrong.", line);
-            exec.succesful = FALSE;
-            free_dict(&function_dict);
             free_data(argument_value.data);
-            return exec;
+            goto UNSUCCESSFUL_FUNCTION_EXECUTION;
         }
 
         free_data(argument_value.data);
@@ -155,30 +137,39 @@ execution_result run_function(char* function_name, size_t line, expr* arguments,
         current_argument = current_argument->next;
     }
 
-    execution_result function_exec = run_program(func->content, &function_dict);
-    free_dict(&function_dict);
+    function_exec = run_program(func->content, &function_dict);
 
-    if(function_exec.stop_execution || !function_exec.succesful) return function_exec;
+    if(!function_exec.succesful) goto UNSUCCESSFUL_FUNCTION_EXECUTION;
+    if(function_exec.stop_execution){
+        exec.stop_execution = TRUE;
+        goto UNSUCCESSFUL_FUNCTION_EXECUTION_FREE;
+    }
 
-    if(!type_equality(function_exec.data.type, func->return_type)){
+    if(!types_can_be_assigned_to(func->return_type, function_exec.data.type)){
         write_exec_error("Value which function call returned does not match the return type of the function.", line);
-        exec.succesful = FALSE;
-        return exec;
+        goto UNSUCCESSFUL_FUNCTION_EXECUTION;
     }
 
     data_copy_entire_data(&exec.data, function_exec.data);
     free_data(function_exec.data);
+    free_dict(&function_dict);
+    return exec;
+
+UNSUCCESSFUL_FUNCTION_EXECUTION:
+    exec.succesful = FALSE;
+UNSUCCESSFUL_FUNCTION_EXECUTION_FREE:
+    free_data(function_exec.data);
+    free_dict(&function_dict);
     return exec;
 }
 
 // Creates data that must be freed by caller
-// TO DO: maybe remove statements that repeat themselves by creating macro
 expr_eval_result eval_expr(expr* expression, dictionary* dict){
     expr_eval_result res = (expr_eval_result){TRUE, EMPTY_DATA, FALSE};
     if(expression == NULL) return res;
 
     // This is placed earlier, since expressions shouldnt get evaluated in this function
-    if(expression->type == Function_Call){
+    if(expression->type == Expr_Function_Call){
         execution_result function_exec = run_function(expression->variable->name, expression->line, expression->expr_1, dict);
         
         res.stop_execution = function_exec.stop_execution;
@@ -187,158 +178,170 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
         return res;
     }
 
+    if(expression->type == Expr_Array){
+        data_array* arr = data_array_new(&GLOBAL_ANY_TYPE);
+        res.data.value.arr = arr;
+
+        expr* current_expression = expression->expr_1;
+        data_type* current_believed_type = NULL;
+        BOOL is_any_data_type = FALSE;
+        int i = 0;
+
+        if(current_expression == NULL){ // EMPTY ARRAY
+            res.data.type = types_get_array_type(&GLOBAL_ANY_TYPE);
+            return res;
+        } 
+
+        while(current_expression != NULL){
+            expr_eval_result value = eval_expr(current_expression, dict);
+            if(!value.succesful || value.stop_execution){
+                res = value;
+                free_data_array(arr);
+                return res;
+            }
+            if(!is_any_data_type){
+                if(current_believed_type == NULL) current_believed_type = value.data.type;
+                else{
+                    if(!types_equality(current_believed_type, value.data.type)){
+                        is_any_data_type = TRUE;
+                        current_believed_type = &GLOBAL_ANY_TYPE;
+                    }
+                }
+            }
+
+            data* ref = data_array_get_reference(arr, i);
+            data_copy_entire_data(ref, value.data);
+            free_data(value.data);
+            current_expression = current_expression->next;
+            i++;
+        }
+
+        data_array_set_new_type(arr, current_believed_type);
+        res.data.type = types_get_array_type(types_copy(current_believed_type));
+        return res;
+    }
+
+
     expr_eval_result value1 = eval_expr(expression->expr_1, dict);
     expr_eval_result value2 = eval_expr(expression->expr_2, dict);
     
     if(!value1.succesful || !value2.succesful){
-        res.succesful = FALSE;
-        free_data(value1.data);
-        free_data(value2.data);
-        return res;
+        goto UNSUCCESSFUL_EVAL_EXPR;
     }
     if(value1.stop_execution || value2.stop_execution){
         res.stop_execution = TRUE;
-        free_data(value1.data);
-        free_data(value2.data);
-        return res;
+        goto UNSUCCESSFUL_EVAL_EXPR_FREE;
     }
 
-    BOOL both_num = is_data_number_type(value1.data) && is_data_number_type(value2.data);
+    BOOL both_num = data_is_number_type(value1.data) && data_is_number_type(value2.data);
     // Get number values incase they are numbers and are needed
     double num1 = GET_NUMBER_FROM_DATA(value1.data);
     double num2 = GET_NUMBER_FROM_DATA(value2.data);
 
-    if(expression->type == Lit){
+    if(expression->type == Expr_Lit){
         res.data = expression->data;
     }
 
-    if(expression->type == Add){
+    if(expression->type == Expr_Add){
         if(!both_num){
             write_exec_error("Invalid operands for '+' operator.", expression->line);
-            res.succesful = FALSE;
-            free_data(value1.data);
-            free_data(value2.data);
-            return res;
+            goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
         res.data = NUMBER_DATA(num1 + num2);
     }
 
-    if(expression->type == Sub){
+    if(expression->type == Expr_Sub){
         if(!both_num){
             write_exec_error("Invalid operands for '-' operator.", expression->line);
-            res.succesful = FALSE;
-            free_data(value1.data);
-            free_data(value2.data);
-            return res;
+            goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
         res.data = NUMBER_DATA(num1 - num2);
     }
 
-    if(expression->type == Mul){
+    if(expression->type == Expr_Mul){
         if(!both_num){
             write_exec_error("Invalid operands for '*' operator.", expression->line);
-            res.succesful = FALSE;
-            free_data(value1.data);
-            free_data(value2.data);
-            return res;
+            goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
         res.data = NUMBER_DATA(num1 * num2);
     }
 
-    if(expression->type == Div){
+    if(expression->type == Expr_Div){
         if(!both_num){
             write_exec_error("Invalid operands for '/' operator.", expression->line);
-            res.succesful = FALSE;
-            free_data(value1.data);
-            free_data(value2.data);
-            return res;
+            goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
         if(num2 == 0){
             write_exec_error("Divide by zero error.", expression->line);
-            res.succesful = FALSE;
-            free_data(value1.data);
-            free_data(value2.data);
-            return res;
+            goto UNSUCCESSFUL_EVAL_EXPR;
         }
         res.data = NUMBER_DATA(num1 / num2);
     }
 
-    if(expression->type == Neg){
-        if(!is_data_number_type(value1.data)){
+    if(expression->type == Expr_Neg){
+        if(!data_is_number_type(value1.data)){
             write_exec_error("Invalid operand for negation operator.", expression->line);
-            res.succesful = FALSE;
-            free_data(value1.data);
-            free_data(value2.data);
-            return res;
+            goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
         res.data = NUMBER_DATA(-num1);
     }
 
-    if(expression->type == Var_Acc){
+    if(expression->type == Expr_Var_Acc){
         data* var_value = access_variable(expression->variable, dict);
         if(var_value != NULL) data_copy_entire_data(&res.data, *var_value);
         else{
-            res.succesful = FALSE;
-            free_data(value1.data);
-            free_data(value2.data);
-            return res;
+            goto UNSUCCESSFUL_EVAL_EXPR;
         }
-        data_remove_reference(var_value);
     }
 
-    if(expression->type == Bool_Neg){
-        if(!is_data_number_type(value1.data)){
+    if(expression->type == Expr_Bool_Neg){
+        if(!data_is_number_type(value1.data)){
             write_exec_error("Invalid operand for '!' operator.", expression->line);
-            res.succesful = FALSE;
-            free_data(value1.data);
-            free_data(value2.data);
-            return res;
+            goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
         res.data = NUMBER_DATA(!num1);
     }
 
-    if(expression->type == Eq){
+    if(expression->type == Expr_Eq){
         if(!both_num){
             write_exec_error("Invalid operand for '==' operator.", expression->line);
-            res.succesful = FALSE;
-            free_data(value1.data);
-            free_data(value2.data);
-            return res;
+            goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
         res.data = NUMBER_DATA(num1 == num2);
     }
 
-    if(expression->type == Lt){
+    if(expression->type == Expr_Lt){
         if(!both_num){
             write_exec_error("Invalid operand for '<' operator.", expression->line);
-            res.succesful = FALSE;
-            free_data(value1.data);
-            free_data(value2.data);
-            return res;
+            goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
         res.data = NUMBER_DATA(num1 < num2);
     }
 
-    if(expression->type == Lte){
+    if(expression->type == Expr_Lte){
         if(!both_num){
             write_exec_error("Invalid operand for '<=' operator.", expression->line);
-            res.succesful = FALSE;
-            free_data(value1.data);
-            free_data(value2.data);
-            return res;
+            goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
         res.data = NUMBER_DATA(num1 <= num2);
     }
 
+    free_data(value1.data);
+    free_data(value2.data);
+    return res;
+
+UNSUCCESSFUL_EVAL_EXPR:
+    res.succesful = FALSE;
+UNSUCCESSFUL_EVAL_EXPR_FREE:
     free_data(value1.data);
     free_data(value2.data);
     return res;
@@ -350,76 +353,66 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
 
     expr_eval_result inner_expression = eval_expr(statement->expression, dict);
     if(!inner_expression.succesful){
-        exec.succesful = FALSE;
-        return exec;
+        goto UNSUCCESSFUL_STATEMENT_EXECUTION;
     }
     if(inner_expression.stop_execution){
         exec.stop_execution = TRUE;
         return exec;
     }
 
-    if(statement->type == Ass){
+    if(statement->type == Stmt_Ass){
         data* data_reference = access_variable(statement->variable, dict);
         if(data_reference == NULL){
-            exec.succesful = FALSE;
-            return exec;
+            goto UNSUCCESSFUL_STATEMENT_EXECUTION;
         }
 
-        data_remove_reference(data_reference); // already remove reference to old variable
         data_update_result result = data_update_value(data_reference, inner_expression.data);
         if(!result.valid){
             if(result.reason == NotInitialized) write_var_not_init_error("PLACEHOLDER", statement->line);
             else if(result.reason == DifferentType) write_exec_error("Cannot assign to variable, as expression has different type.", statement->line);
 
-            free_data(inner_expression.data);
-            exec.succesful = FALSE;
-            return exec;
+            goto UNSUCCESSFUL_STATEMENT_EXECUTION;
         }
     }
 
-    if(statement->type == Init){
+    if(statement->type == Stmt_Init){
         if(statement->variable->type != Literal){
             write_exec_error("ERROR, variable being initialized is not a literal, this shouldnt even happen.", statement->line);
-            free_data(inner_expression.data);
-            exec.succesful = FALSE;
-            return exec;
+            goto UNSUCCESSFUL_STATEMENT_EXECUTION;
         }
 
         BOOL result = dict_add(dict, statement->variable->name, statement->data_type);
         // result == FALSE, then variable has already been initialized
         if(!result){
             write_exec_error("Variable has already been initialized.", statement->line);
-            free_data(inner_expression.data);
-            exec.succesful = FALSE;
-            return exec;
+            goto UNSUCCESSFUL_STATEMENT_EXECUTION;
         }
 
         if(statement->expression != NULL){
             data_update_result init = dict_update(dict, statement->variable->name, inner_expression.data);
             if(!init.valid){
-                exec.succesful = FALSE;
                 if(init.reason == DifferentType) write_exec_error("Cannot initialize variable, as the given expression has a different data type", statement->line);
-                free_data(inner_expression.data);
-                return exec;
+                goto UNSUCCESSFUL_STATEMENT_EXECUTION;
             }
         }
     }
 
-    if(statement->type == Print){
+    if(statement->type == Stmt_Print){
         data_print(inner_expression.data);
         printf("\n");
     }
 
-    if(statement->type == Return){
+    if(statement->type == Stmt_Return){
         data_copy_entire_data(&exec.data, inner_expression.data);
         exec.return_activated = TRUE;
     }
 
-    if(statement->type == Expression){
+    if(statement->type == Stmt_Expression){
         // Dont need to do anything, as expression has already been calculated further above
     }
 
-    if(statement->type == If){
+    if(statement->type == Stmt_If){
+        // TO DO: better boolean evaluation
         if(GET_NUMBER_FROM_DATA(inner_expression.data)){
             exec = run_program(statement->inner_stmt_1, dict);
         }else{
@@ -427,40 +420,45 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
         }
     }
 
-    if(statement->type == While){
+    if(statement->type == Stmt_While){
+        // TO DO: better boolean evaluation
         while(GET_NUMBER_FROM_DATA(inner_expression.data)){
             exec = run_program(statement->inner_stmt_1, dict);
             if(stop_next_execution(exec)){
                 exec.break_while = FALSE;
                 break;
             }
-            inner_expression = eval_expr(statement->expression, dict); //Recalc expression // TO DO
+
+            data old_inner_expression = inner_expression.data;
+            inner_expression = eval_expr(statement->expression, dict); //Recalc expression
+            free_data(old_inner_expression);
             if(!inner_expression.succesful){
-                exec.succesful = FALSE;
-                free_data(inner_expression.data);
-                return exec;
+                goto UNSUCCESSFUL_STATEMENT_EXECUTION;
             }
         }
     }
 
-    if(statement->type == Block){
+    if(statement->type == Stmt_Block){
         dictionary block_dict = dict_get_extension(dict);
         exec = run_program(statement->inner_stmt_1, &block_dict);
         free_dict(&block_dict);
     }
 
-    if(statement->type == Brk){
+    if(statement->type == Stmt_Brk){
         //Do not run next statement
         exec.break_while = TRUE;
-        free_data(inner_expression.data);
-        return exec;
     }
 
-    if(statement->type == Stop){
+    if(statement->type == Stmt_Stop){
         //Do not run next statement and stop execution
         exec.stop_execution = TRUE;
     }
 
+    free_data(inner_expression.data);
+    return exec;
+
+UNSUCCESSFUL_STATEMENT_EXECUTION:
+    exec.succesful = FALSE;
     free_data(inner_expression.data);
     return exec;
 }

@@ -74,7 +74,7 @@ BOOL dict_add(dictionary* dict, char* name, data_type* type){
         return FALSE;
     }
 
-    entry->data.type = copy_of_type(type);
+    entry->data.type = types_copy(type);
     entry->data.value = data_default_value(type);
     return TRUE;
 }
