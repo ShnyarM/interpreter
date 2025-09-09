@@ -243,12 +243,25 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
     }
 
     if(expression->type == Expr_Add){
-        if(!both_num){
+        if(both_num){
+            res.data = NUMBER_DATA(num1 + num2);
+        }else if(data_is_string_type(value1.data) && data_is_string_type(value2.data)){
+            string* new_string = strings_concat(data_get_string_from_data(value1.data), data_get_string_from_data(value2.data));
+            res.data = STRING_DATA_PTR(new_string);
+        }else if(data_is_number_type(value1.data) && data_is_string_type(value2.data)){
+            string* converted = string_convert_from_number(GET_NUMBER_FROM_DATA(value1.data));
+            string* new_string = strings_concat(converted, data_get_string_from_data(value2.data));
+            res.data = STRING_DATA_PTR(new_string);
+            free_string(converted);
+        }else if(data_is_string_type(value1.data) && data_is_number_type(value2.data)){
+            string* converted = string_convert_from_number(GET_NUMBER_FROM_DATA(value2.data));
+            string* new_string = strings_concat(data_get_string_from_data(value1.data), converted);
+            res.data = STRING_DATA_PTR(new_string);
+            free_string(converted);
+        }else{
             write_exec_error("Invalid operands for '+' operator.", expression->line);
             goto UNSUCCESSFUL_EVAL_EXPR;
         }
-
-        res.data = NUMBER_DATA(num1 + num2);
     }
 
     if(expression->type == Expr_Sub){
@@ -297,6 +310,10 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
         else{
             goto UNSUCCESSFUL_EVAL_EXPR;
         }
+    }
+
+    if(expression->type == Expr_String){
+        res.data = STRING_DATA(expression->string);
     }
 
     if(expression->type == Expr_Bool_Neg){
@@ -398,7 +415,7 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == Stmt_Print){
-        data_print(inner_expression.data);
+        data_print(inner_expression.data, FALSE);
         printf("\n");
     }
 

@@ -1,6 +1,7 @@
 #pragma once
 #include "../helper.h"
 #include "types.h"
+#include "strings.h"
 
 // helper Macros
 
@@ -19,6 +20,8 @@
 #define EMPTY_DATA ((data){&GLOBAL_INVALID_TYPE, {NULL}})
 #define NUMBER_DATA(v) ((data){&GLOBAL_ATOMIC_NUMBER_TYPE, (data_value){.number=v}})
 #define FUNCTION_DATA(ptr) ((data){&GLOBAL_FUNCTION_TYPE, (data_value){.function=ptr}})
+#define STRING_DATA(s) ((data){&GLOBAL_STRING_TYPE, (data_value){.str=string_new(s)}})
+#define STRING_DATA_PTR(ptr) ((data){&GLOBAL_STRING_TYPE, (data_value){.str=ptr}})
 
 // Data extraction
 #define GET_NUMBER_FROM_DATA(d) (d.value.number)
@@ -34,6 +37,7 @@ struct data_array_t;
 typedef union data_value_u {
     struct data_array_t* arr;
     struct function_t* function;
+    string* str;
     double number;
 } data_value;
 
@@ -61,10 +65,12 @@ void data_copy_entire_data(data* destination, data value);
 data_update_result data_update_value(data* orig, data new_value);
 BOOL data_is_of_kind_array(data d);
 BOOL data_is_number_type(data d);
+BOOL data_is_string_type(data d);
 struct data_array_t* data_get_array_from_data(data d);
 struct function_t* data_get_function_from_data(data d);
+string* data_get_string_from_data(data d);
 data_value data_default_value(data_type* type);
-void data_print(data d);
+void data_print(data d, BOOL encapsuled);
 
 // Arrays
 

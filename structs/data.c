@@ -1,5 +1,6 @@
 #include "data.h"
 #include "function.h"
+#include "strings.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -11,11 +12,13 @@ void data_array_remove_reference(data_array* arr);
 void data_add_reference(data* d){
     if(d == NULL) return;
     if(data_is_of_kind_array(*d)) data_array_add_reference(data_get_array_from_data(*d));
+    if(data_is_string_type(*d)) string_add_reference(data_get_string_from_data(*d));
 }
 
 void data_remove_reference(data* d){
     if(d == NULL) return;
     if(data_is_of_kind_array(*d)) data_array_remove_reference(data_get_array_from_data(*d));
+    if(data_is_string_type(*d)) string_remove_reference(data_get_string_from_data(*d));
 }
 
 void data_copy_entire_data(data* destination, data value){
@@ -49,8 +52,17 @@ BOOL data_is_number_type(data d){
     return types_is_number(d.type);
 }
 
+BOOL data_is_string_type(data d){
+    if(d.type == NULL) return FALSE;
+    return types_is_string(d.type);
+}
+
 data_array* data_get_array_from_data(data d){
     return d.value.arr;
+}
+
+string* data_get_string_from_data(data d){
+    return d.value.str;
 }
 
 function* data_get_function_from_data(data d){
@@ -65,15 +77,20 @@ data_value data_default_value(data_type* type){
         data_array* arr = data_array_new(type->inner_type);
         return (data_value){.arr=arr};
     }
+    if(types_is_string(type))return (data_value){.str=&GLOBAL_EMPTY_STRING};
 
     return (data_value){.number=0};
 }
 
-void data_print(data d){
+void data_print(data d, BOOL encapsuled){
     if(data_is_of_kind_array(d)){ //If its array, print every value
         data_array_print(data_get_array_from_data(d));
     }else if(data_is_empty(d)){
         printf("VOID");
+    }else if(data_is_string_type(d)){
+        if(encapsuled) printf("%c", '"');
+        string_print(data_get_string_from_data(d));
+        if(encapsuled) printf("%c", '"');
     }else{
         printf("%.15g", GET_NUMBER_FROM_DATA(d));
     }
@@ -145,11 +162,11 @@ void data_array_print(data_array* arr){
 
     int size = data_array_get_size(arr);
     for(int i = 0; i < size-1; i++){
-        data_print(*data_array_get_reference(arr, i));
+        data_print(*data_array_get_reference(arr, i), TRUE);
         printf(", ");
     }
 
-    data_print(*data_array_get_reference(arr, size-1));
+    data_print(*data_array_get_reference(arr, size-1), TRUE);
     printf("]");
 }
 

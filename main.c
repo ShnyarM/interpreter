@@ -12,6 +12,7 @@
 #include "structs/function.h"
 
 size_t MAX_VARIABLE_LENGTH = 50;
+size_t MAX_STRING_LENGTH = 500;
 program RUNNING_PROGRAM;
 dictionary GLOBAL_DICTIONARY;
 
@@ -21,13 +22,15 @@ extern char PARSE_ERROR_MESSAGE[];
 // <expression> ::= <add-expr> (('==' | '<' | '<=') <add-expr>)*
 // <add-expr> ::= <mul-expr> (('+' | '-') <mul-expr>)*
 // <mul-expr> ::= <atomic> (('*' | '/') <atomic>)*
-// <atomic> ::= ['-' | '!'](<literal> | <variable_access> | <parens> | <function_call> | <array>)
+// <atomic> ::= ['-' | '!'](<literal> | <variable_access> | <parens> | <function_call> | <array> | <string>)
 // <parens> ::= '(' <expression> ')'
 
 // <function_call> ::== <variable_name>'('[<expression_listg>]')'
 
 // <array> ::== '[' [<expression_list>] ']'
 // <expression_list> ::== <expression> (',' <expression>)*
+
+// <string> :: '"' (<character>)* '"'
 
 // <variable_name> ::== ('_' | <letter>)('_' | <letter> | <digit>)*
 // <variable_access> ::== <variable_name>( ('['<expression']') )*
@@ -126,7 +129,7 @@ program parse_program(char* str){
     return prog;
 }
 
-int execute_program(char* str){
+int execute_program(char* str, int argc, char** argv){
     program program = parse_program(str);
     if(!program.valid){
         printf("%s\n", PARSE_ERROR_MESSAGE);
@@ -135,6 +138,22 @@ int execute_program(char* str){
 
     GLOBAL_DICTIONARY = dict_new();
     RUNNING_PROGRAM = program;
+
+    // add args
+    data_type* string_array_type = types_get_array_type(&GLOBAL_STRING_TYPE);
+    data_array* args = data_array_new(&GLOBAL_STRING_TYPE);
+    data array_data = (data){string_array_type, {.arr=args}};
+    for(int i = 0; i < argc; i++){
+        data arg = STRING_DATA(argv[i]);
+        data* ref = data_array_get_reference(args, i);
+        data_update_value(ref, arg);
+        free_data(arg);
+    }
+
+    dict_add(&GLOBAL_DICTIONARY, "_s_args", string_array_type);
+    dict_update(&GLOBAL_DICTIONARY, "_s_args", array_data);
+    free_data(array_data);
+
 
     execution_result exec = run_program(program.first_statement, &GLOBAL_DICTIONARY);
 
@@ -161,10 +180,10 @@ int main(int argc, char** argv){
         printf("File doesn't exist.\n");
         return 1;
     }
-    int result = execute_program(file_contents);
+    int result = execute_program(file_contents, argc-1, argv+1);
     free(file_contents);
 
     return result;
 }
 
-//TO DO: array literals
+//TO DO: concate strings with arrays, test cases, simplify type system, allow for any types

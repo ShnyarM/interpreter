@@ -1,0 +1,5 @@
+{
+	"output": "hello world\nHello World!\nThis is a string.\nhello world\nhello world\nnew string\nhello world\nstring 3\n[[], [string 1, string 2, string 3]]",
+	"return_code": "0",
+	"description": "Basic strings"
+}

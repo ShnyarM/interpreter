@@ -6,6 +6,7 @@
 data_type GLOBAL_INVALID_TYPE = (data_type){Type_Kind_None, Type_Atomic_None, NULL, TRUE};
 data_type GLOBAL_ANY_TYPE = (data_type){Type_Kind_Any, Type_Atomic_None, NULL, TRUE};
 data_type GLOBAL_ATOMIC_NUMBER_TYPE = (data_type){Type_Kind_Atomic, Type_Atomic_Number, NULL, TRUE};
+data_type GLOBAL_STRING_TYPE = (data_type){Type_Kind_Atomic, Type_Atomic_String, NULL, TRUE};
 data_type GLOBAL_FUNCTION_TYPE = (data_type){Type_Kind_Function, Type_Atomic_None, NULL, TRUE};
 
 data_type* types_get_plain(){
@@ -62,6 +63,10 @@ BOOL types_is_array(data_type* t){
 
 BOOL types_is_number(data_type* t){
     return t->kind == Type_Kind_Atomic && t->atomic_type == Type_Atomic_Number;
+}
+
+BOOL types_is_string(data_type* t){
+    return t->kind == Type_Kind_Atomic && t->atomic_type == Type_Atomic_String;
 }
 
 BOOL types_is_any(data_type* t){

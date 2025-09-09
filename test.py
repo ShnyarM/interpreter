@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 
+
 subprocess.run("make")
 test_cases_amn = int(len(os.listdir("testing/files")) / 2)
 

@@ -1,0 +1,24 @@
+string hello = "hello world";
+print(hello);
+print("Hello World!");
+
+function getString():string{
+    return "This is a string.";
+}
+
+print(getString());
+
+string hello2 = hello;
+print(hello);
+print(hello2);
+
+hello = "new string";
+print(hello);
+print(hello2);
+
+string[] string_array = ["string 1", "string 2", "string 3"];
+print(string_array[2]);
+
+string[][] string_array_2;
+string_array_2[1] = string_array;
+print(string_array_2); 

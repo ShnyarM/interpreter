@@ -27,6 +27,7 @@ extern char OPENING_SQUARE_BRACKET_ERROR[];
 extern char CLOSING_SQUARE_BRACKET_ERROR[];
 
 extern size_t MAX_VARIABLE_LENGTH;
+extern size_t MAX_STRING_LENGTH;
 extern size_t LINE_COUNTER;
 
 static parse_result_expr parse_add_expr(char *str);
@@ -36,6 +37,7 @@ static parse_result_expr parse_integer(char *str);
 static parse_result_expr parse_parens(char *str);
 static parse_result_expr parse_function_call(char* str);
 static parse_result_expr parse_array(char* str);
+static parse_result_expr parse_string(char* str);
 
 parse_result_expr parse_expr(char *str)
 {   
@@ -220,6 +222,11 @@ static parse_result_expr parse_atomic(char *str)
     FATAL_CHECK(array)
     if (array.valid)
         return array;
+
+    parse_result_expr string = parse_string(str);
+    FATAL_CHECK(string)
+    if (string.valid)
+        return string;
 
     parse_result_expr parens = parse_parens(str);
     FATAL_CHECK(parens)
@@ -421,6 +428,38 @@ static parse_result_expr parse_array(char* str){
 
     expr* expression = expr_get_plain(Expr_Array, EMPTY_DATA, list, NULL);
     return PARSE_RESULT_EXPR(expression, closing_bracket);
+}
+
+static parse_result_expr parse_string(char* str){
+    PARSE_INIT
+
+    char buffer[MAX_STRING_LENGTH+1];
+
+    char* start = char_follows(str, '"', FALSE);
+    if(start == NULL) REVERT;
+
+    char* current = start;
+    int index = 0;
+    while(TRUE){
+        if(*current == 0){
+            FATAL_REVERT("End of string keyword '\"' is missing.");
+        }
+        if(*current == '"') break;
+        if(index >= MAX_STRING_LENGTH){
+            FATAL_REVERT("Maximum string length reached. Either string is too long, or end of string keyword '\"' is missing.")
+        }
+
+        buffer[index] = *current;
+        if(*current == '\n') LINE_COUNTER++;
+        current++;
+        index++;
+    }
+    current++;
+    buffer[index] = 0;
+
+    expr* expression = expr_get_plain(Expr_String, EMPTY_DATA, NULL, NULL);
+    expression->string = copy_of_string(buffer);
+    return PARSE_RESULT_EXPR(expression, current);
 }
 
 static parse_result_expr parse_parens(char *str)

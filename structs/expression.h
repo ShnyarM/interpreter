@@ -7,7 +7,7 @@ struct expression_t;
 #include "variable_access.h"
 
 // Expressions
-typedef enum expr_type_e {Expr_Lit, Expr_Add, Expr_Sub, Expr_Mul, Expr_Div, Expr_Neg, Expr_Var_Acc, Expr_Function_Call, Expr_Array, Expr_Bool_Neg, Expr_Eq, Expr_Lt, Expr_Lte} e_type;
+typedef enum expr_type_e {Expr_Lit, Expr_Add, Expr_Sub, Expr_Mul, Expr_Div, Expr_Neg, Expr_Var_Acc, Expr_Function_Call, Expr_Array, Expr_String, Expr_Bool_Neg, Expr_Eq, Expr_Lt, Expr_Lte} e_type;
 
 typedef struct expression_t{
     e_type type;
@@ -16,6 +16,7 @@ typedef struct expression_t{
     struct expression_t *expr_1;
     struct expression_t *expr_2;
     struct expression_t *next;          // If it is part of a linked list of expressions
+    char* string;
     size_t line;                      // line at which this expression appears
 } expr;
 
