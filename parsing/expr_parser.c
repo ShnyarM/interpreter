@@ -457,8 +457,7 @@ static parse_result_expr parse_string(char* str){
     current++;
     buffer[index] = 0;
 
-    expr* expression = expr_get_plain(Expr_String, EMPTY_DATA, NULL, NULL);
-    expression->string = copy_of_string(buffer);
+    expr* expression = expr_get_plain(Expr_Lit, STRING_DATA(buffer), NULL, NULL);
     return PARSE_RESULT_EXPR(expression, current);
 }
 

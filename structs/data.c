@@ -82,20 +82,6 @@ data_value data_default_value(data_type* type){
     return (data_value){.number=0};
 }
 
-void data_print(data d, BOOL encapsuled){
-    if(data_is_of_kind_array(d)){ //If its array, print every value
-        data_array_print(data_get_array_from_data(d));
-    }else if(data_is_empty(d)){
-        printf("VOID");
-    }else if(data_is_string_type(d)){
-        if(encapsuled) printf("%c", '"');
-        string_print(data_get_string_from_data(d));
-        if(encapsuled) printf("%c", '"');
-    }else{
-        printf("%.15g", GET_NUMBER_FROM_DATA(d));
-    }
-}
-
 // Returns a new data array, which is not initialized yet, i.e., has no list attached to it
 // Type gets copied
 data_array* data_array_new(data_type* type){
@@ -152,23 +138,6 @@ void data_array_set_new_type(data_array* arr, data_type* new_type){
     arr->type = types_copy(new_type);
 }
 
-void data_array_print(data_array* arr){
-    if(!arr->initialized){
-        printf("[]");
-        return;
-    }
-
-    printf("[");
-
-    int size = data_array_get_size(arr);
-    for(int i = 0; i < size-1; i++){
-        data_print(*data_array_get_reference(arr, i), TRUE);
-        printf(", ");
-    }
-
-    data_print(*data_array_get_reference(arr, size-1), TRUE);
-    printf("]");
-}
 
 int data_array_get_size(data_array* arr){
     return arr->size;

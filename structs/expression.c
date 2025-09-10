@@ -11,7 +11,6 @@ expr *expr_get_plain(e_type type, data data, expr *ex_1, expr *ex_2){
     expression->expr_2 = ex_2;
     expression->line = LINE_COUNTER;
     expression->next = NULL;
-    expression->string = NULL;
     return expression;
 }
 
@@ -34,7 +33,7 @@ void free_expr(expr *e)
     free_expr(e->expr_2);
     free_expr(e->next);
     free_var_access(e->variable);
-    if(e->string != NULL) free(e->string);
+    free_data(e->data);
 
     free(e);
 }

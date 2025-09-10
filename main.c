@@ -186,4 +186,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TO DO: concate strings with arrays, test cases, simplify type system, allow for any types
+//TO DO: simplify type system, allow for any types, decimal numbers

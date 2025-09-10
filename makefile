@@ -35,7 +35,7 @@ function.o: structs/function.c structs/function.h structs/data.h structs/stateme
 variable_access.o: structs/variable_access.c structs/variable_access.h structs/expression.h helper.h
 	$(CC) $(CFLAGS) -c structs/variable_access.c
 
-strings.o: structs/strings.c structs/strings.h helper.h
+strings.o: structs/strings.c structs/strings.h structs/data.h helper.h
 	$(CC) $(CFLAGS) -c structs/strings.c
 
 

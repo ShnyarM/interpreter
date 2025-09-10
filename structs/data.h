@@ -31,13 +31,14 @@
 
 struct data_t;
 struct data_array_t;
+struct string_t;
 
 // Variable / Data types
 
 typedef union data_value_u {
     struct data_array_t* arr;
     struct function_t* function;
-    string* str;
+    struct string_t* str;
     double number;
 } data_value;
 
@@ -63,14 +64,14 @@ void data_add_reference(data* d);
 void data_remove_reference(data* d);
 void data_copy_entire_data(data* destination, data value);
 data_update_result data_update_value(data* orig, data new_value);
+BOOL data_is_empty(data d);
 BOOL data_is_of_kind_array(data d);
 BOOL data_is_number_type(data d);
 BOOL data_is_string_type(data d);
 struct data_array_t* data_get_array_from_data(data d);
 struct function_t* data_get_function_from_data(data d);
-string* data_get_string_from_data(data d);
+struct string_t* data_get_string_from_data(data d);
 data_value data_default_value(data_type* type);
-void data_print(data d, BOOL encapsuled);
 
 // Arrays
 
@@ -92,5 +93,4 @@ data_array* data_array_new(data_type* type);
 data* data_array_get_reference(data_array* arr, int index);
 void data_array_set_new_type(data_array* arr, data_type* new_type);
 int data_array_get_size(data_array* arr);
-void data_array_print(data_array* arr);
 void free_data_array(data_array* arr);
