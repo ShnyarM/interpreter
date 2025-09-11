@@ -33,7 +33,7 @@ extern size_t LINE_COUNTER;
 static parse_result_expr parse_add_expr(char *str);
 static parse_result_expr parse_mul_expr(char *str);
 static parse_result_expr parse_atomic(char *str);
-static parse_result_expr parse_integer(char *str);
+static parse_result_expr parse_number(char *str);
 static parse_result_expr parse_parens(char *str);
 static parse_result_expr parse_function_call(char* str);
 static parse_result_expr parse_array(char* str);
@@ -203,10 +203,10 @@ static parse_result_expr parse_atomic(char *str)
     }
     LINE_COUNTER = next.line_counter_before;
 
-    parse_result_expr integer = parse_integer(str);
-    FATAL_CHECK(integer)
-    if (integer.valid)
-        return integer;
+    parse_result_expr number = parse_number(str);
+    FATAL_CHECK(number)
+    if (number.valid)
+        return number;
 
     parse_result_expr function_call = parse_function_call(str);
     FATAL_CHECK(function_call)
@@ -236,7 +236,7 @@ static parse_result_expr parse_atomic(char *str)
     REVERT
 }
 
-static parse_result_expr parse_integer(char *str)
+static parse_result_expr parse_number(char *str)
 {
     PARSE_INIT
 
@@ -251,7 +251,7 @@ static parse_result_expr parse_integer(char *str)
         str++;
     char *str_end = str + 1;
 
-    int value = 0;
+    double value = 0;
     int multiplier = 1;
     while (str_start <= str)
     {
@@ -260,7 +260,19 @@ static parse_result_expr parse_integer(char *str)
         str--;
     }
 
-    expr *literal = expr_get_plain(Expr_Lit, NUMBER_DATA((double)value), NULL, NULL);
+    if(*str_end == '.'){ // Decimal number
+        char* current_decimal = str_end+1;
+
+        double decimal_multiplier = 0.1;
+        while(is_digit(*current_decimal)){
+            value += (decimal_multiplier*char_to_digit(*current_decimal));
+            decimal_multiplier *= 0.1;
+            current_decimal++;
+        }
+        str_end = current_decimal;
+    }
+
+    expr *literal = expr_get_plain(Expr_Lit, NUMBER_DATA(value), NULL, NULL);
     return PARSE_RESULT_EXPR(literal, str_end);
 }
 
