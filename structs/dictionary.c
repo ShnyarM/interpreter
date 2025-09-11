@@ -65,23 +65,31 @@ static dict_entry* dict_add_to_list(dictionary* dict, char* name){
     return entry;
 }
 
-// adds to list if not present, returns TRUE if successful and returns FALSE if already present
-// does not check in child dictionary
-BOOL dict_add(dictionary* dict, char* name, data_type* type){ 
+// adds to list if not present
+// returns reference to newly added data block
+data_ref_access_result dict_add(dictionary* dict, char* name, data_type* type){
+    data_ref_access_result res;
+    res.valid = FALSE;
+    res.ref = NULL;
+    res.storable = NULL;
 
     dict_entry* entry = dict_add_to_list(dict, name);
     if(entry == NULL){
-        return FALSE;
+        return res;
     }
 
-    entry->data.type = types_copy(type);
-    entry->data.value = data_default_value(type);
-    return TRUE;
+    entry->storable = types_copy(type);
+    entry->data = data_default(type);
+
+    res.valid = TRUE;
+    res.ref = &entry->data;
+    res.storable = entry->storable;
+    return res;
 }
 
 // Updates a existing variable
 // Return TRUE if it was able to update it
-data_update_result dict_update(dictionary* dict, char* name, data data){
+/*data_update_result dict_update(dictionary* dict, char* name, data data){
     if(!dict_valid(dict)) return (data_update_result){FALSE, NoDict};
 
     dict_entry* entry = dict_get_entry(dict, name);
@@ -98,30 +106,40 @@ data_update_result dict_update(dictionary* dict, char* name, data data){
     }
 
     return (data_update_result){FALSE, NotInitialized};
-}
+}*/
 
 data_access_result dict_get(dictionary* dict, char* name){
-    data* ref = dict_get_reference(dict, name);
+    data_ref_access_result ref = dict_get_reference(dict, name);
 
-    if(ref == NULL) return INVALID_DATA_ACCESS_RESULT;
-    return (data_access_result){TRUE, *ref};
+    if(!ref.valid) return INVALID_DATA_ACCESS_RESULT;
+    return (data_access_result){TRUE, *ref.ref};
 }
 
-data* dict_get_reference(dictionary* dict, char* name){
+data_ref_access_result dict_get_reference(dictionary* dict, char* name){
+    data_ref_access_result res;
+    res.valid = FALSE;
+    res.ref = NULL;
+    res.storable = NULL;
+
     if(!dict_valid(dict)){
-        return NULL;
+        return res;
     }
 
     dict_entry* entry = dict_get_entry(dict, name);
-    if(entry != NULL) return &entry->data;
+    if(entry != NULL){
+        res.valid = TRUE;
+        res.ref = &entry->data;
+        res.storable = entry->storable;
+        return res;
+    }
 
     //check in child dictionary
     if(dict->child != NULL){
-        data* child_result = dict_get_reference(dict->child, name);
-        if(child_result != NULL) return child_result;
+        data_ref_access_result child_result = dict_get_reference(dict->child, name);
+        if(child_result.valid) return child_result;
     }
     
-    return NULL;
+    return res;
 }
 
 static void dict_increase_capacity(dictionary* dict){
@@ -144,6 +162,7 @@ void free_dict(dictionary* dict){
     //Free each variable
     for(int i = 0; i < dict->length; i++){
         free(dict->list[i].name);
+        free_type(dict->list[i].storable);
         free_data(dict->list[i].data);
     }
 

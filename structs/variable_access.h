@@ -4,6 +4,8 @@ struct variable_access_t;
 
 #include "expression.h"
 
+struct data_t;
+
 // Variable accesses
 typedef enum var_access_e {Literal, Var_Access_Array} var_access_type;
 

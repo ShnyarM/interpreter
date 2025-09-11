@@ -1,10 +1,12 @@
 #pragma once
 
 #include "data.h"
+#include "variable_access.h"
 
 typedef struct dictionary_entry_t{
     char* name;
     data data;
+    data_type* storable;    // What kind of data_type this entry can store
 } dict_entry;
 
 typedef struct dictionary_t{
@@ -16,8 +18,8 @@ typedef struct dictionary_t{
 
 dictionary dict_new();
 dictionary dict_get_extension(dictionary* child);
-data_update_result dict_update(dictionary* dict, char* name, data data);
-BOOL dict_add(dictionary* dict, char* name, data_type* type);
+//data_update_result dict_update(dictionary* dict, char* name, data data);
+data_ref_access_result dict_add(dictionary* dict, char* name, data_type* type);
 data_access_result dict_get(dictionary* dict, char* name);
-data* dict_get_reference(dictionary* dict, char* name);
+data_ref_access_result dict_get_reference(dictionary* dict, char* name);
 void free_dict(dictionary* dict); 

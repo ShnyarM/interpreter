@@ -46,44 +46,49 @@ BOOL stop_next_execution(execution_result e){
 // Gets reference to variable
 // This will add a new reference to accessed data
 // Caller must remove this reference
-static data* access_variable(var_access* variable, dictionary* dict){
-    if(variable == NULL) return NULL;
+static data_ref_access_result access_variable(var_access* variable, dictionary* dict){
+    data_ref_access_result res;
+    res.ref = NULL;
+    res.valid = FALSE;
+    res.storable = &GLOBAL_INVALID_TYPE;
 
-    data* inner_access = access_variable(variable->inner_access, dict);
+    if(variable == NULL) return res;
+
+    data_ref_access_result inner_access = access_variable(variable->inner_access, dict);
     
     if(variable->type == Literal){
-        data* var_value = dict_get_reference(dict, variable->name);
-        if(var_value == NULL){
+        data_ref_access_result var_value = dict_get_reference(dict, variable->name);
+        if(!var_value.valid){
             write_var_not_init_error(variable->name, variable->line);
-            return NULL;
+            return res;
         }
 
         return var_value;
     }else if(variable->type == Var_Access_Array){
         expr_eval_result index_value = eval_expr(variable->index, dict); // TO DO
-        if(!index_value.succesful || inner_access == NULL) return NULL;
+        if(!index_value.succesful || !inner_access.valid) return res;
         
-        if(!data_is_of_kind_array(*inner_access)){
+        if(!data_is_of_kind_array(*inner_access.ref)){
             write_exec_error("Variable can't be accessed as an array, as it is not an array.", variable->line);
-            return NULL;
+            return res;
         }
 
         if(!data_is_number_type(index_value.data)){
             write_exec_error("Index of array access is not of type number.", variable->line);
-            return NULL;
+            return res;
         }
 
         if(GET_NUMBER_FROM_DATA(index_value.data) < 0){
             write_exec_error("Arrays cannot be accessed with a negative index.", variable->line);
-            return NULL;
+            return res;
         }
 
-        data* arr_access_value = data_array_get_reference(data_get_array_from_data(*inner_access), (int)(index_value.data.value.number));
-        if(arr_access_value == NULL) return NULL;
+        data_ref_access_result arr_access_value = data_array_get_reference(data_get_array_from_data(*inner_access.ref), (int)(index_value.data.value.number));
+        if(!arr_access_value.valid) return res;
         return arr_access_value;
     }
 
-    return NULL;
+    return res;
 }
 
 // calling dict is the dictionary under which the function is being called
@@ -124,8 +129,14 @@ execution_result run_function(char* function_name, size_t line, expr* arguments,
             goto UNSUCCESSFUL_FUNCTION_EXECUTION;
         }
 
-        dict_add(&function_dict, current_parameter->name, current_parameter->type);
-        data_update_result update = dict_update(&function_dict, current_parameter->name, argument_value.data);
+        data_ref_access_result ref = dict_add(&function_dict, current_parameter->name, current_parameter->type);
+        if(!ref.valid){
+            write_exec_error("Function can't be called, as it has two parameters with the same name.", line);
+            free_data(argument_value.data);
+            goto UNSUCCESSFUL_FUNCTION_EXECUTION;
+        }
+
+        data_update_result update = data_assign_to(ref.ref, argument_value.data, ref.storable);
         if(!update.valid){
             write_exec_error("This shouldnt be able to happen, something wrong.", line);
             free_data(argument_value.data);
@@ -145,12 +156,12 @@ execution_result run_function(char* function_name, size_t line, expr* arguments,
         goto UNSUCCESSFUL_FUNCTION_EXECUTION_FREE;
     }
 
-    if(!types_can_be_assigned_to(func->return_type, function_exec.data.type)){
+    data_update_result res = data_assign_to(&exec.data, function_exec.data, func->return_type);
+    if(!res.valid){
         write_exec_error("Value which function call returned does not match the return type of the function.", line);
         goto UNSUCCESSFUL_FUNCTION_EXECUTION;
     }
 
-    data_copy_entire_data(&exec.data, function_exec.data);
     free_data(function_exec.data);
     free_dict(&function_dict);
     return exec;
@@ -209,8 +220,8 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
                 }
             }
 
-            data* ref = data_array_get_reference(arr, i);
-            data_copy_entire_data(ref, value.data);
+            data_ref_access_result ref = data_array_get_reference(arr, i);
+            data_assign_to(ref.ref, value.data, &GLOBAL_ANY_TYPE);
             free_data(value.data);
             current_expression = current_expression->next;
             i++;
@@ -305,8 +316,8 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
     }
 
     if(expression->type == Expr_Var_Acc){
-        data* var_value = access_variable(expression->variable, dict);
-        if(var_value != NULL) data_copy_entire_data(&res.data, *var_value);
+        data_ref_access_result var_value = access_variable(expression->variable, dict);
+        if(var_value.valid) data_assign_to(&res.data, *var_value.ref, &GLOBAL_ANY_TYPE);
         else{
             goto UNSUCCESSFUL_EVAL_EXPR;
         }
@@ -370,12 +381,12 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == Stmt_Ass){
-        data* data_reference = access_variable(statement->variable, dict);
-        if(data_reference == NULL){
+        data_ref_access_result data_reference = access_variable(statement->variable, dict);
+        if(!data_reference.valid){
             goto UNSUCCESSFUL_STATEMENT_EXECUTION;
         }
 
-        data_update_result result = data_update_value(data_reference, inner_expression.data);
+        data_update_result result = data_assign_to(data_reference.ref, inner_expression.data, data_reference.storable);
         if(!result.valid){
             if(result.reason == NotInitialized) write_var_not_init_error("PLACEHOLDER", statement->line);
             else if(result.reason == DifferentType) write_exec_error("Cannot assign to variable, as expression has different type.", statement->line);
@@ -390,15 +401,15 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
             goto UNSUCCESSFUL_STATEMENT_EXECUTION;
         }
 
-        BOOL result = dict_add(dict, statement->variable->name, statement->data_type);
-        // result == FALSE, then variable has already been initialized
-        if(!result){
+        data_ref_access_result ref = dict_add(dict, statement->variable->name, statement->data_type);
+        // !ref.valid, then variable has already been initialized
+        if(!ref.valid){
             write_exec_error("Variable has already been initialized.", statement->line);
             goto UNSUCCESSFUL_STATEMENT_EXECUTION;
         }
 
         if(statement->expression != NULL){
-            data_update_result init = dict_update(dict, statement->variable->name, inner_expression.data);
+            data_update_result init = data_assign_to(ref.ref, inner_expression.data, ref.storable);
             if(!init.valid){
                 if(init.reason == DifferentType) write_exec_error("Cannot initialize variable, as the given expression has a different data type", statement->line);
                 goto UNSUCCESSFUL_STATEMENT_EXECUTION;
@@ -413,7 +424,7 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
     }
 
     if(statement->type == Stmt_Return){
-        data_copy_entire_data(&exec.data, inner_expression.data);
+        data_assign_to(&exec.data, inner_expression.data, &GLOBAL_ANY_TYPE);
         exec.return_activated = TRUE;
     }
 

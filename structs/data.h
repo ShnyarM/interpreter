@@ -52,6 +52,12 @@ typedef struct data_access_result_t{
     data result;
 } data_access_result;
 
+typedef struct data_ref_access_result_t{
+    BOOL valid;
+    struct data_t* ref;
+    data_type* storable;    // Only temporary weak pointer
+} data_ref_access_result;
+
 enum data_update_failure_reason {NoFailure, NotInitialized, DifferentType, NoDict, NotInIndexRange};
 
 typedef struct data_update_result_t{
@@ -62,8 +68,9 @@ typedef struct data_update_result_t{
 void free_data(data data);
 void data_add_reference(data* d);
 void data_remove_reference(data* d);
-void data_copy_entire_data(data* destination, data value);
-data_update_result data_update_value(data* orig, data new_value);
+//void data_copy_entire_data(data* destination, data value);
+//data_update_result data_update_value(data* orig, data new_value);
+data_update_result data_assign_to(data* lhs, data rhs, data_type* assignable_type);
 BOOL data_is_empty(data d);
 BOOL data_is_of_kind_array(data d);
 BOOL data_is_number_type(data d);
@@ -71,7 +78,7 @@ BOOL data_is_string_type(data d);
 struct data_array_t* data_get_array_from_data(data d);
 struct function_t* data_get_function_from_data(data d);
 struct string_t* data_get_string_from_data(data d);
-data_value data_default_value(data_type* type);
+data data_default(data_type* type);
 BOOL data_equality(data d1, data d2);
 
 // Arrays
@@ -91,7 +98,7 @@ typedef struct data_array_t{
 data_array* data_array_new(data_type* type);
 //data_update_result data_array_set(data_array* arr, int index, data data);
 //data_access_result data_array_get(data_array* arr, int index);
-data* data_array_get_reference(data_array* arr, int index);
+data_ref_access_result data_array_get_reference(data_array* arr, int index);
 void data_array_set_new_type(data_array* arr, data_type* new_type);
 BOOL data_array_equality(data_array* arr1, data_array* arr2);
 int data_array_get_size(data_array* arr);

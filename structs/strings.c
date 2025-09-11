@@ -52,7 +52,8 @@ string* string_from_data_array(data_array* arr){
 
     int size = data_array_get_size(arr);
     for(int i = 0; i < size; i++){
-        string* data_string = string_from_data(*data_array_get_reference(arr, i), TRUE);
+        data_ref_access_result ref = data_array_get_reference(arr, i);
+        string* data_string = string_from_data(*ref.ref, TRUE);
 
         if(capacity-used < data_string->length+5){
             capacity*=2;

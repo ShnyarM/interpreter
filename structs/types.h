@@ -22,6 +22,7 @@ BOOL types_is_array(data_type* t);
 BOOL types_is_number(data_type* t);
 BOOL types_is_string(data_type* t);
 BOOL types_is_any(data_type* t);
+BOOL types_is_invalid(data_type* t);
 
 extern data_type GLOBAL_INVALID_TYPE;
 extern data_type GLOBAL_ANY_TYPE;

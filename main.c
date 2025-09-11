@@ -78,15 +78,15 @@ program parse_program(char* str){
         if(function.valid){
             // create data block which encapsules function
             data func = FUNCTION_DATA(function.function);
-            BOOL result = dict_add(&prog.functions, function.function->name, &GLOBAL_FUNCTION_TYPE);
-            dict_update(&prog.functions, function.function->name, func);
+            data_ref_access_result result = dict_add(&prog.functions, function.function->name, &GLOBAL_FUNCTION_TYPE);
 
-            if(!result){
+            if(!result.valid){
                 fatal = TRUE;
                 write_parse_error("Duplicate function names are not allowed.");
                 free_function(function.function);
             }
 
+            data_assign_to(result.ref, func, result.storable);
             remaining = function.remaining;
             continue;
         }
@@ -145,13 +145,13 @@ int execute_program(char* str, int argc, char** argv){
     data array_data = (data){string_array_type, {.arr=args}};
     for(int i = 0; i < argc; i++){
         data arg = STRING_DATA(argv[i]);
-        data* ref = data_array_get_reference(args, i);
-        data_update_value(ref, arg);
+        data_ref_access_result ref = data_array_get_reference(args, i);
+        data_assign_to(ref.ref, arg, &GLOBAL_STRING_TYPE);
         free_data(arg);
     }
 
-    dict_add(&GLOBAL_DICTIONARY, "_s_args", string_array_type);
-    dict_update(&GLOBAL_DICTIONARY, "_s_args", array_data);
+    data_ref_access_result ref = dict_add(&GLOBAL_DICTIONARY, "_s_args", string_array_type);
+    data_assign_to(ref.ref, array_data, ref.ref->type);
     free_data(array_data);
 
 
@@ -186,4 +186,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TO DO: simplify type system, allow for any types, decimal numbers
+//TO DO:  any type

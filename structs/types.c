@@ -70,6 +70,10 @@ BOOL types_is_any(data_type* t){
     return t->kind == Type_Kind_Any;
 }
 
+BOOL types_is_invalid(data_type* t){
+    return t->kind == Type_Kind_None;
+}
+
 
 void free_type(data_type* t){
     if(t == NULL) return;
