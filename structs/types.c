@@ -3,15 +3,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-data_type GLOBAL_INVALID_TYPE = (data_type){Type_Kind_None, Type_Atomic_None, NULL, TRUE};
-data_type GLOBAL_ANY_TYPE = (data_type){Type_Kind_Any, Type_Atomic_None, NULL, TRUE};
-data_type GLOBAL_ATOMIC_NUMBER_TYPE = (data_type){Type_Kind_Atomic, Type_Atomic_Number, NULL, TRUE};
-data_type GLOBAL_STRING_TYPE = (data_type){Type_Kind_Atomic, Type_Atomic_String, NULL, TRUE};
-data_type GLOBAL_FUNCTION_TYPE = (data_type){Type_Kind_Function, Type_Atomic_None, NULL, TRUE};
+data_type GLOBAL_INVALID_TYPE = (data_type){Type_Kind_None, NULL, TRUE};
+data_type GLOBAL_ANY_TYPE = (data_type){Type_Kind_Any, NULL, TRUE};
+data_type GLOBAL_NUMBER_TYPE = (data_type){Type_Kind_Number, NULL, TRUE};
+data_type GLOBAL_STRING_TYPE = (data_type){Type_Kind_String, NULL, TRUE};
+data_type GLOBAL_FUNCTION_TYPE = (data_type){Type_Kind_Function, NULL, TRUE};
 
 data_type* types_get_plain(){
     data_type* t = (data_type*)malloc(sizeof(data_type));
-    t->atomic_type = Type_Atomic_None;
     t->kind = Type_Kind_None;
     t->inner_type = NULL;
     t->global = FALSE;
@@ -31,7 +30,6 @@ data_type* types_copy(data_type* t){
     if(t->global) return t;
 
     data_type* copy = types_get_plain();
-    copy->atomic_type = t->atomic_type;
     copy->kind = t->kind;
 
     data_type* inner_copy = types_copy(t->inner_type);
@@ -44,11 +42,10 @@ BOOL types_equality(data_type* t1, data_type* t2){
     if(t1 == NULL && t2 == NULL) return TRUE;
     if(t1 == NULL || t2 == NULL) return FALSE;
 
-    BOOL same_atomic = t1->atomic_type == t2->atomic_type;
     BOOL same_kind = t1->kind == t2->kind;
     BOOL same_inner = types_equality(t1->inner_type, t2->inner_type);
 
-    return same_atomic && same_kind && same_inner;
+    return same_kind && same_inner;
 }
 
 BOOL types_can_be_assigned_to(data_type* lhs, data_type* rhs){
@@ -62,11 +59,11 @@ BOOL types_is_array(data_type* t){
 }
 
 BOOL types_is_number(data_type* t){
-    return t->kind == Type_Kind_Atomic && t->atomic_type == Type_Atomic_Number;
+    return t->kind == Type_Kind_Number;
 }
 
 BOOL types_is_string(data_type* t){
-    return t->kind == Type_Kind_Atomic && t->atomic_type == Type_Atomic_String;
+    return t->kind == Type_Kind_String;
 }
 
 BOOL types_is_any(data_type* t){

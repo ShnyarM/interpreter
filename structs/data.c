@@ -82,6 +82,15 @@ data_value data_default_value(data_type* type){
     return (data_value){.number=0};
 }
 
+BOOL data_equality(data d1, data d2){
+    if(!types_equality(d1.type, d2.type)) return FALSE;
+    if(data_is_number_type(d1)) return GET_NUMBER_FROM_DATA(d1) == GET_NUMBER_FROM_DATA(d2);
+    if(data_is_string_type(d1)) return string_equality(data_get_string_from_data(d1), data_get_string_from_data(d2));
+    if(data_is_of_kind_array(d1)) return data_array_equality(data_get_array_from_data(d1), data_get_array_from_data(d2));
+    if(data_is_empty(d1) && data_is_empty(d2)) return TRUE;
+    return FALSE;
+}
+
 // Returns a new data array, which is not initialized yet, i.e., has no list attached to it
 // Type gets copied
 data_array* data_array_new(data_type* type){
@@ -138,6 +147,14 @@ void data_array_set_new_type(data_array* arr, data_type* new_type){
     arr->type = types_copy(new_type);
 }
 
+BOOL data_array_equality(data_array* arr1, data_array* arr2){
+    if(arr1->size != arr2->size) return FALSE;
+    for(int i = 0; i < arr1->size; i++){
+        if(!data_equality(*data_array_get_reference(arr1, i), *data_array_get_reference(arr2, i))) return FALSE;
+    }
+
+    return TRUE;
+}
 
 int data_array_get_size(data_array* arr){
     return arr->size;

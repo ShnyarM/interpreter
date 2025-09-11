@@ -18,7 +18,7 @@
 
 // Data with value
 #define EMPTY_DATA ((data){&GLOBAL_INVALID_TYPE, {NULL}})
-#define NUMBER_DATA(v) ((data){&GLOBAL_ATOMIC_NUMBER_TYPE, (data_value){.number=v}})
+#define NUMBER_DATA(v) ((data){&GLOBAL_NUMBER_TYPE, (data_value){.number=v}})
 #define FUNCTION_DATA(ptr) ((data){&GLOBAL_FUNCTION_TYPE, (data_value){.function=ptr}})
 #define STRING_DATA(s) ((data){&GLOBAL_STRING_TYPE, (data_value){.str=string_new(s)}})
 #define STRING_DATA_PTR(ptr) ((data){&GLOBAL_STRING_TYPE, (data_value){.str=ptr}})
@@ -72,6 +72,7 @@ struct data_array_t* data_get_array_from_data(data d);
 struct function_t* data_get_function_from_data(data d);
 struct string_t* data_get_string_from_data(data d);
 data_value data_default_value(data_type* type);
+BOOL data_equality(data d1, data d2);
 
 // Arrays
 
@@ -92,5 +93,6 @@ data_array* data_array_new(data_type* type);
 //data_access_result data_array_get(data_array* arr, int index);
 data* data_array_get_reference(data_array* arr, int index);
 void data_array_set_new_type(data_array* arr, data_type* new_type);
+BOOL data_array_equality(data_array* arr1, data_array* arr2);
 int data_array_get_size(data_array* arr);
 void free_data_array(data_array* arr);

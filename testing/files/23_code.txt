@@ -26,3 +26,19 @@ function getAnotherArray(){
 }
 
 print(getAnotherArray());
+
+arr1=arr2;
+print(arr1);
+print(arr2);
+
+if([1, 2, 3, 4]==[1, 2, 3, 4]) print(1);
+else print(0);
+
+if(arr1==arr2) print(1);
+else print(0);
+
+if([1, 2, 3, 4, 9]==[1, 2, 3, 4]) print(1);
+else print(0);
+
+if([1, 2, 3, 4, 9, [1, 2, 3]]==[1, 2, 3, 4, 9, [1, 2, 3]]) print(1);
+else print(0);

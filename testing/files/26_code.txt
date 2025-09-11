@@ -37,3 +37,9 @@ else print(0);
 
 if("th" + "is" == "this")print(1);
 else print(0);
+
+if(1== "this")print(1);
+else print(0);
+
+if([1, 2, 4]== "this")print(1);
+else print(0);

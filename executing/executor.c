@@ -322,14 +322,8 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
     }
 
     if(expression->type == Expr_Eq){
-        if(both_num){
-            res.data = NUMBER_DATA(num1 == num2);
-        }else if(data_is_string_type(value1.data) && data_is_string_type(value2.data)){
-            res.data = NUMBER_DATA(string_equality(data_get_string_from_data(value1.data), data_get_string_from_data(value2.data)));
-        }else{
-            write_exec_error("Invalid operand for '==' operator.", expression->line);
-            goto UNSUCCESSFUL_EVAL_EXPR;
-        }
+        BOOL result = data_equality(value1.data, value2.data);
+        res.data = NUMBER_DATA((double)result);
     }
 
     if(expression->type == Expr_Lt){

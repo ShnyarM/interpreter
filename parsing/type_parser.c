@@ -27,7 +27,7 @@ parse_result_type parse_atomic_type(char* str){
 
     char* number = word_follows(str, "number", FALSE);
     if(number != NULL){
-        data_type* number_type = &GLOBAL_ATOMIC_NUMBER_TYPE;
+        data_type* number_type = &GLOBAL_NUMBER_TYPE;
         return PARSE_RESULT_TYPE(number_type, number);
     }
 
