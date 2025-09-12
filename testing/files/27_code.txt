@@ -1,0 +1,60 @@
+number i = 6;
+i = i+6;
+i = 1245;
+number[] arr;
+arr[1] = 5;
+arr[6] = 7;
+print(arr);
+arr = [1];
+
+arr = [1];
+any[] arr2 = [1];
+
+arr[7] = 2;
+arr2[7] = 2;
+
+if(arr==arr2) print(1);
+else print(0);
+
+number[] arr3 = [1];
+any[] arr4 = [1, "hello"];
+
+arr3[7] = 2;
+arr4[7] = 2;
+arr4[1] = 0;
+
+if(arr3==arr4) print(1);
+else print(0);
+
+string str;
+print(str);
+str = "hello world";
+print(str);
+
+string[] str_arr = ["", "hello"];
+string[][] str_arr_arr = [str_arr, str_arr];
+
+print(str_arr_arr);
+
+any test;
+print(test);
+
+test = 1;
+print(test);
+
+test = "hello";
+print(test);
+
+test = str_arr_arr;
+print(test);
+
+any[] any_arr = [1, 2, 3, 4, "hello", [1, 2, ["world"]]];
+any_arr[0] = "test";
+print(any_arr);
+
+any[][] any_any_arr = [[1], [2], [5, "string"], [["string", 123]]];
+any_any_arr[0] = ["hello"];
+print(any_any_arr);
+
+any[] asdf = [1, 2, 3, 4];
+number[] asdfg = asdf;

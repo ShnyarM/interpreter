@@ -18,6 +18,7 @@ data_type* types_get_array_type(data_type* inner);
 data_type* types_copy(data_type* t);
 BOOL types_equality(data_type* t1, data_type* t2);
 BOOL types_can_be_assigned_to(data_type* lhs, data_type* rhs);
+data_type* types_most_common_type(data_type* t1, data_type* t2);
 BOOL types_is_array(data_type* t);
 BOOL types_is_number(data_type* t);
 BOOL types_is_string(data_type* t);

@@ -17,12 +17,16 @@ data_type* types_get_plain(){
     return t;
 }
 
-// Transfers ownership of type
-data_type* types_get_array_type(data_type* inner){
+data_type* types_get_extension(data_type* inner, data_type_kind extension_type){
     data_type* t = types_get_plain();
-    t->kind = Type_Kind_Array;
+    t->kind = extension_type;
     t->inner_type = inner;
     return t;
+}
+
+// Transfers ownership of type
+data_type* types_get_array_type(data_type* inner){
+    return types_get_extension(inner, Type_Kind_Array);
 }
 
 data_type* types_copy(data_type* t){
@@ -49,9 +53,23 @@ BOOL types_equality(data_type* t1, data_type* t2){
 }
 
 BOOL types_can_be_assigned_to(data_type* lhs, data_type* rhs){
+    if(lhs == NULL && rhs == NULL) return TRUE;
+    if(lhs == NULL || rhs == NULL) return FALSE;
+
     if(lhs->kind == Type_Kind_Any) return TRUE;
-    if(types_equality(lhs, rhs)) return TRUE;
+    if(lhs->kind == rhs->kind && types_can_be_assigned_to(lhs->inner_type, rhs->inner_type)) return TRUE;
+
     return FALSE;
+}
+
+// creates a new type, which is the most common type of the two types
+data_type* types_most_common_type(data_type* t1, data_type* t2){
+    if(t1 == NULL || t2 == NULL) return NULL;
+    
+    if(types_equality(t1, t2)) return types_copy(t1);
+    if(t1->kind == t2->kind) return types_get_extension(types_most_common_type(t1->inner_type, t2->inner_type), t1->kind);
+
+    return &GLOBAL_ANY_TYPE;
 }
 
 BOOL types_is_array(data_type* t){

@@ -211,12 +211,11 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
                 return res;
             }
             if(!is_any_data_type){
-                if(current_believed_type == NULL) current_believed_type = value.data.type;
+                if(current_believed_type == NULL) current_believed_type = types_copy(value.data.type);
                 else{
-                    if(!types_equality(current_believed_type, value.data.type)){
-                        is_any_data_type = TRUE;
-                        current_believed_type = &GLOBAL_ANY_TYPE;
-                    }
+                    data_type* new_believed_type = types_most_common_type(current_believed_type, value.data.type);
+                    free_type(current_believed_type);
+                    current_believed_type = new_believed_type;
                 }
             }
 
@@ -228,7 +227,7 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
         }
 
         data_array_set_new_type(arr, current_believed_type);
-        res.data.type = types_get_array_type(types_copy(current_believed_type));
+        res.data.type = types_get_array_type(current_believed_type);
         return res;
     }
 
@@ -250,7 +249,7 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
     double num2 = GET_NUMBER_FROM_DATA(value2.data);
 
     if(expression->type == Expr_Lit){
-        res.data = expression->data;
+        data_assign_to(&res.data, expression->data, &GLOBAL_ANY_TYPE);
     }
 
     if(expression->type == Expr_Add){

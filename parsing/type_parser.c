@@ -37,6 +37,12 @@ parse_result_type parse_atomic_type(char* str){
         return PARSE_RESULT_TYPE(string_type, string);
     }
 
+    char* any = word_follows(str, "any", FALSE);
+    if(any != NULL){
+        data_type* any_type = &GLOBAL_ANY_TYPE;
+        return PARSE_RESULT_TYPE(any_type, any);
+    }
+
     REVERT
 }
 
