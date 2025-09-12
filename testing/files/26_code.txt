@@ -43,3 +43,9 @@ else print(0);
 
 if([1, 2, 4]== "this")print(1);
 else print(0);
+
+if("")print(1);
+else print(0);
+
+if("hello")print(1);
+else print(0);

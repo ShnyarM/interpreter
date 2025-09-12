@@ -323,17 +323,20 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
     }
 
     if(expression->type == Expr_Bool_Neg){
-        if(!data_is_number_type(value1.data)){
+        if(data_is_bool_type(value1.data)){
+            res.data = BOOL_DATA(!GET_BOOL_FROM_DATA(value1.data));
+        }else if(data_is_number_type(value1.data)){
+            res.data = BOOL_DATA(!num1);
+        }
+        else{
             write_exec_error("Invalid operand for '!' operator.", expression->line);
             goto UNSUCCESSFUL_EVAL_EXPR;
         }
-
-        res.data = NUMBER_DATA(!num1);
     }
 
     if(expression->type == Expr_Eq){
         BOOL result = data_equality(value1.data, value2.data);
-        res.data = NUMBER_DATA((double)result);
+        res.data = BOOL_DATA(result);
     }
 
     if(expression->type == Expr_Lt){
@@ -342,7 +345,7 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
             goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
-        res.data = NUMBER_DATA(num1 < num2);
+        res.data = BOOL_DATA(num1 < num2);
     }
 
     if(expression->type == Expr_Lte){
@@ -351,7 +354,7 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
             goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
-        res.data = NUMBER_DATA(num1 <= num2);
+        res.data = BOOL_DATA(num1 <= num2);
     }
 
     free_data(value1.data);
@@ -433,7 +436,7 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
 
     if(statement->type == Stmt_If){
         // TO DO: better boolean evaluation
-        if(GET_NUMBER_FROM_DATA(inner_expression.data)){
+        if(data_to_bool(inner_expression.data)){
             exec = run_program(statement->inner_stmt_1, dict);
         }else{
             exec = run_program(statement->inner_stmt_2, dict);
@@ -442,7 +445,7 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
 
     if(statement->type == Stmt_While){
         // TO DO: better boolean evaluation
-        while(GET_NUMBER_FROM_DATA(inner_expression.data)){
+        while(data_to_bool(inner_expression.data)){
             exec = run_program(statement->inner_stmt_1, dict);
             if(stop_next_execution(exec)){
                 exec.break_while = FALSE;

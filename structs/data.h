@@ -22,9 +22,11 @@
 #define FUNCTION_DATA(ptr) ((data){&GLOBAL_FUNCTION_TYPE, (data_value){.function=ptr}})
 #define STRING_DATA(s) ((data){&GLOBAL_STRING_TYPE, (data_value){.str=string_new(s)}})
 #define STRING_DATA_PTR(ptr) ((data){&GLOBAL_STRING_TYPE, (data_value){.str=ptr}})
+#define BOOL_DATA(b) ((data){&GLOBAL_BOOL_TYPE, (data_value){.bool=(BOOL)b}})
 
 // Data extraction
 #define GET_NUMBER_FROM_DATA(d) (d.value.number)
+#define GET_BOOL_FROM_DATA(d) (d.value.bool)
 
 // Data access results
 #define INVALID_DATA_ACCESS_RESULT ((data_access_result){FALSE, EMPTY_DATA})
@@ -40,6 +42,7 @@ typedef union data_value_u {
     struct function_t* function;
     struct string_t* str;
     double number;
+    BOOL bool;
 } data_value;
 
 typedef struct data_t {
@@ -68,16 +71,16 @@ typedef struct data_update_result_t{
 void free_data(data data);
 void data_add_reference(data* d);
 void data_remove_reference(data* d);
-//void data_copy_entire_data(data* destination, data value);
-//data_update_result data_update_value(data* orig, data new_value);
 data_update_result data_assign_to(data* lhs, data rhs, data_type* assignable_type);
 BOOL data_is_empty(data d);
 BOOL data_is_of_kind_array(data d);
 BOOL data_is_number_type(data d);
 BOOL data_is_string_type(data d);
+BOOL data_is_bool_type(data d);
 struct data_array_t* data_get_array_from_data(data d);
 struct function_t* data_get_function_from_data(data d);
 struct string_t* data_get_string_from_data(data d);
+BOOL data_to_bool(data d);
 data data_default(data_type* type);
 BOOL data_equality(data d1, data d2);
 
@@ -96,10 +99,9 @@ typedef struct data_array_t{
 } data_array;
 
 data_array* data_array_new(data_type* type);
-//data_update_result data_array_set(data_array* arr, int index, data data);
-//data_access_result data_array_get(data_array* arr, int index);
 data_ref_access_result data_array_get_reference(data_array* arr, int index);
 void data_array_set_new_type(data_array* arr, data_type* new_type);
 BOOL data_array_equality(data_array* arr1, data_array* arr2);
+BOOL data_array_is_empty(data_array* arr);
 int data_array_get_size(data_array* arr);
 void free_data_array(data_array* arr);

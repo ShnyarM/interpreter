@@ -38,6 +38,7 @@ static parse_result_expr parse_parens(char *str);
 static parse_result_expr parse_function_call(char* str);
 static parse_result_expr parse_array(char* str);
 static parse_result_expr parse_string(char* str);
+static parse_result_expr parse_bool(char* str);
 
 parse_result_expr parse_expr(char *str)
 {   
@@ -208,6 +209,11 @@ static parse_result_expr parse_atomic(char *str)
     if (number.valid)
         return number;
 
+    parse_result_expr bool = parse_bool(str);
+    FATAL_CHECK(bool)
+    if (bool.valid)
+        return bool;
+    
     parse_result_expr function_call = parse_function_call(str);
     FATAL_CHECK(function_call)
     if (function_call.valid)
@@ -471,6 +477,22 @@ static parse_result_expr parse_string(char* str){
 
     expr* expression = expr_get_plain(Expr_Lit, STRING_DATA(buffer), NULL, NULL);
     return PARSE_RESULT_EXPR(expression, current);
+}
+
+static parse_result_expr parse_bool(char* str){
+    PARSE_INIT
+
+    char* tr = word_follows(str, "true", FALSE);
+    if(tr != NULL && !is_var_letter(*tr) && !is_digit(*tr)){
+        return PARSE_RESULT_EXPR(expr_get_plain(Expr_Lit, BOOL_DATA(TRUE), NULL, NULL), tr);
+    }
+
+    char* fa = word_follows(str, "false", FALSE);
+    if(fa != NULL && !is_var_letter(*fa) && !is_digit(*fa)){
+        return PARSE_RESULT_EXPR(expr_get_plain(Expr_Lit, BOOL_DATA(FALSE), NULL, NULL), fa);
+    }
+
+    REVERT
 }
 
 static parse_result_expr parse_parens(char *str)

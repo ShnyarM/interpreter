@@ -39,6 +39,13 @@ string* string_from_number(double number){
     return string_new(buffer);
 }
 
+string* string_from_bool(BOOL b){
+    char buffer[7];
+    if(b) snprintf(buffer, sizeof(buffer), "%s", "true");
+    else snprintf(buffer, sizeof(buffer), "%s", "false");
+    return string_new(buffer);
+}
+
 string* string_from_data_array(data_array* arr){
     if(!arr->initialized){
         return string_new("[]");
@@ -84,6 +91,8 @@ string* string_from_data(data d, BOOL encapsuled){
     }else if(data_is_string_type(d)){
         if(encapsuled) return string_get_encapsuled(data_get_string_from_data(d));
         else return string_new(data_get_string_from_data(d)->c_string);
+    }else if(data_is_bool_type(d)){
+        return string_from_bool(GET_BOOL_FROM_DATA(d));
     }else{
         return string_from_number(GET_NUMBER_FROM_DATA(d));
     }
@@ -108,6 +117,10 @@ string* strings_concat(string* str1, string* str2){
 BOOL string_equality(string* s1, string* s2){
     if(strncmp(s1->c_string, s2->c_string, s1->length > s2->length ? s2->length+1 : s1->length+1) == 0) return TRUE;
     else return FALSE;
+}
+
+BOOL string_is_empty(string* str){
+    return *str->c_string == 0;
 }
 
 void string_add_reference(string* str){

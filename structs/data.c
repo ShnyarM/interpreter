@@ -21,23 +21,6 @@ void data_remove_reference(data* d){
     if(data_is_string_type(*d)) string_remove_reference(data_get_string_from_data(*d));
 }
 
-/*void data_copy_entire_data(data* destination, data value){
-    data_add_reference(&value);
-    destination->value = value.value;
-    destination->type = types_copy(value.type);
-}
-
-data_update_result data_update_value(data* orig, data new_value){
-    if(!types_can_be_assigned_to(orig->type, new_value.type)) return (data_update_result){FALSE, DifferentType};
-    // Check if new_value or old value is array, to properly add and remove references
-    data_add_reference(&new_value);
-    data_remove_reference(orig);
-
-    orig->value = new_value.value;
-
-    return (data_update_result){TRUE, NoFailure};
-}*/
-
 // assignable is the data type which can be assigned to lhs
 data_update_result data_assign_to(data* lhs, data rhs, data_type* assignable_type){
     if(!types_can_be_assigned_to(assignable_type, rhs.type)) return (data_update_result){FALSE, DifferentType};
@@ -70,6 +53,11 @@ BOOL data_is_string_type(data d){
     return types_is_string(d.type);
 }
 
+BOOL data_is_bool_type(data d){
+    if(d.type == NULL) return FALSE;
+    return types_is_bool(d.type);
+}
+
 data_array* data_get_array_from_data(data d){
     return d.value.arr;
 }
@@ -82,18 +70,15 @@ function* data_get_function_from_data(data d){
     return d.value.function;
 }
 
-// Returns a default value for a given data type
-/*data_value data_default_value(data_type* type){
-    if(types_is_any(type)) return (data_value){.number=0};
-    if(types_is_number(type)) return (data_value){.number=0};
-    if(types_is_array(type)){
-        data_array* arr = data_array_new(type->inner_type);
-        return (data_value){.arr=arr};
-    }
-    if(types_is_string(type))return (data_value){.str=&GLOBAL_EMPTY_STRING};
+BOOL data_to_bool(data d){
+    if(data_is_bool_type(d)) return GET_BOOL_FROM_DATA(d);
+    if(data_is_number_type(d)) return (BOOL)GET_NUMBER_FROM_DATA(d);
+    if(data_is_string_type(d)) return !string_is_empty(data_get_string_from_data(d));
+    if(data_is_of_kind_array(d)) return !data_array_is_empty(data_get_array_from_data(d));
+    if(data_is_empty(d)) return FALSE;
 
-    return (data_value){.number=0};
-}*/
+    return FALSE;
+}
 
 // type gets copied
 data data_default(data_type* type){
@@ -114,6 +99,9 @@ data data_default(data_type* type){
     else if(types_is_string(type)){
         d.type = &GLOBAL_STRING_TYPE;
         d.value = (data_value){.str=&GLOBAL_EMPTY_STRING};
+    }else if(types_is_bool(type)){
+        d.type = &GLOBAL_BOOL_TYPE;
+        d.value = (data_value){.bool=FALSE};
     }
     
     return d;
@@ -124,6 +112,7 @@ BOOL data_equality(data d1, data d2){
     if(data_is_number_type(d1)) return GET_NUMBER_FROM_DATA(d1) == GET_NUMBER_FROM_DATA(d2);
     if(data_is_string_type(d1)) return string_equality(data_get_string_from_data(d1), data_get_string_from_data(d2));
     if(data_is_of_kind_array(d1)) return data_array_equality(data_get_array_from_data(d1), data_get_array_from_data(d2));
+    if(data_is_bool_type(d1)) return GET_BOOL_FROM_DATA(d1) == GET_BOOL_FROM_DATA(d2);
     if(data_is_empty(d1) && data_is_empty(d2)) return TRUE;
     return FALSE;
 }
@@ -209,6 +198,10 @@ BOOL data_array_equality(data_array* arr1, data_array* arr2){
     }
 
     return TRUE;
+}
+
+BOOL data_array_is_empty(data_array* arr){
+    return arr->size == 0;
 }
 
 int data_array_get_size(data_array* arr){

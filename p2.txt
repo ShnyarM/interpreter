@@ -1,6 +1,2 @@
-function func(any a):any[]{
-    return a;
-}
-
-print(func(1));
-print(func("hello"));
+bool boolean = false;
+boolean = true;

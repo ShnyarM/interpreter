@@ -7,6 +7,7 @@ data_type GLOBAL_INVALID_TYPE = (data_type){Type_Kind_None, NULL, TRUE};
 data_type GLOBAL_ANY_TYPE = (data_type){Type_Kind_Any, NULL, TRUE};
 data_type GLOBAL_NUMBER_TYPE = (data_type){Type_Kind_Number, NULL, TRUE};
 data_type GLOBAL_STRING_TYPE = (data_type){Type_Kind_String, NULL, TRUE};
+data_type GLOBAL_BOOL_TYPE = (data_type){Type_Kind_Bool, NULL, TRUE};
 data_type GLOBAL_FUNCTION_TYPE = (data_type){Type_Kind_Function, NULL, TRUE};
 
 data_type* types_get_plain(){
@@ -82,6 +83,10 @@ BOOL types_is_number(data_type* t){
 
 BOOL types_is_string(data_type* t){
     return t->kind == Type_Kind_String;
+}
+
+BOOL types_is_bool(data_type* t){
+    return t->kind == Type_Kind_Bool;
 }
 
 BOOL types_is_any(data_type* t){

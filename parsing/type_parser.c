@@ -37,6 +37,12 @@ parse_result_type parse_atomic_type(char* str){
         return PARSE_RESULT_TYPE(string_type, string);
     }
 
+    char* bool = word_follows(str, "bool", FALSE);
+    if(bool != NULL){
+        data_type* bool_type = &GLOBAL_BOOL_TYPE;
+        return PARSE_RESULT_TYPE(bool_type, bool);
+    }
+
     char* any = word_follows(str, "any", FALSE);
     if(any != NULL){
         data_type* any_type = &GLOBAL_ANY_TYPE;
