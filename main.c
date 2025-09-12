@@ -22,7 +22,7 @@ extern char PARSE_ERROR_MESSAGE[];
 // <expression> ::= <add-expr> (('==' | '<' | '<=') <add-expr>)*
 // <add-expr> ::= <mul-expr> (('+' | '-') <mul-expr>)*
 // <mul-expr> ::= <atomic> (('*' | '/') <atomic>)*
-// <atomic> ::= ['-' | '!'](<literal> | <variable_access> | <parens> | <function_call> | <array> | <string>)
+// <atomic> ::= ['-' | '!'](<literal> | <variable_access> | <parens> | <function_call> | <array> | <string> | <bool>)
 // <parens> ::= '(' <expression> ')'
 
 // <function_call> ::== <variable_name>'('[<expression_listg>]')'
@@ -30,7 +30,8 @@ extern char PARSE_ERROR_MESSAGE[];
 // <array> ::== '[' [<expression_list>] ']'
 // <expression_list> ::== <expression> (',' <expression>)*
 
-// <string> :: '"' (<character>)* '"'
+// <string> ::== '"' (<character>)* '"'
+// <bool> ::== 'true' | 'false'
 
 // <variable_name> ::== ('_' | <letter>)('_' | <letter> | <digit>)*
 // <variable_access> ::== <variable_name>( ('['<expression']') )*
@@ -186,4 +187,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TO DO:  any type
+//TO DO: built in functions
