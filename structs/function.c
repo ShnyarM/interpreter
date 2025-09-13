@@ -16,6 +16,16 @@ function* function_get_plain(){
     func->content = NULL;
     func->return_type = NULL;
     func->parameters = NULL;
+    func->is_built_in = FALSE;
+    func->built_in_func_ptr = NULL;
+    return func;
+}
+
+function* function_get_built_in(char* name, built_in_function ptr){
+    function* func = function_get_plain();
+    func->name = copy_of_string(name);
+    func->is_built_in = TRUE;
+    func->built_in_func_ptr = ptr;
     return func;
 }
 

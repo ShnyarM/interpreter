@@ -1,0 +1,5 @@
+{
+	"output": "any[]\n[\"number\", \"number\", \"number\", \"number[]\", \"string\", \"bool\", \"number[][]\"]\nINVALID\nINVALID",
+	"return_code": "0",
+	"description": "typeOf function"
+}

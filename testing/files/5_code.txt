@@ -50,3 +50,6 @@ number x=4;
 
 print(current);
 print(6666666);
+
+print(castToNumber(false)+1);
+print(castToNumber(true)+1);

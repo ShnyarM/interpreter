@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "dictionary.h"
+#include "function.h"
 
 #define INIT_SIZE 1
 #define DICT_ENTRY_SIZE sizeof(dict_entry)
@@ -87,27 +88,6 @@ data_ref_access_result dict_add(dictionary* dict, char* name, data_type* type){
     return res;
 }
 
-// Updates a existing variable
-// Return TRUE if it was able to update it
-/*data_update_result dict_update(dictionary* dict, char* name, data data){
-    if(!dict_valid(dict)) return (data_update_result){FALSE, NoDict};
-
-    dict_entry* entry = dict_get_entry(dict, name);
-
-    if(entry != NULL){
-        data_update_result result = data_update_value(&entry->data, data);
-        return result;
-    }
-
-    //search in child dictionary
-    if(dict->child != NULL){
-        data_update_result result = dict_update(dict->child, name, data);
-        return result;
-    }
-
-    return (data_update_result){FALSE, NotInitialized};
-}*/
-
 data_access_result dict_get(dictionary* dict, char* name){
     data_ref_access_result ref = dict_get_reference(dict, name);
 
@@ -156,6 +136,35 @@ static void dict_increase_capacity(dictionary* dict){
     dict->list = new_list;
     dict->capacity = new_size;
     free(old_list);
+}
+
+data_ref_access_result dict_add_built_in_functions(dictionary* dict){
+    data_ref_access_result print = dict_add(dict, "print", &GLOBAL_FUNCTION_TYPE);
+    if(!print.valid) return print;
+    function* print_func = function_get_built_in("print", &built_in_print);
+    data_assign_to(print.ref, FUNCTION_DATA(print_func), &GLOBAL_FUNCTION_TYPE);
+
+    data_ref_access_result length = dict_add(dict, "length", &GLOBAL_FUNCTION_TYPE);
+    if(!length.valid) return length;
+    function* length_func = function_get_built_in("length", &built_in_length);
+    data_assign_to(length.ref, FUNCTION_DATA(length_func), &GLOBAL_FUNCTION_TYPE);
+
+    data_ref_access_result cast_to_number = dict_add(dict, "castToNumber", &GLOBAL_FUNCTION_TYPE);
+    if(!cast_to_number.valid) return cast_to_number;
+    function* cast_to_number_func = function_get_built_in("castToNumber", &built_in_cast_to_number);
+    data_assign_to(cast_to_number.ref, FUNCTION_DATA(cast_to_number_func), &GLOBAL_FUNCTION_TYPE);
+
+    data_ref_access_result cast_to_string = dict_add(dict, "castToString", &GLOBAL_FUNCTION_TYPE);
+    if(!cast_to_string.valid) return cast_to_string;
+    function* cast_to_string_func = function_get_built_in("castToString", &built_in_cast_to_string);
+    data_assign_to(cast_to_string.ref, FUNCTION_DATA(cast_to_string_func), &GLOBAL_FUNCTION_TYPE);
+
+    data_ref_access_result type_of = dict_add(dict, "typeOf", &GLOBAL_FUNCTION_TYPE);
+    if(!type_of.valid) return type_of;
+    function* type_of_func = function_get_built_in("typeOf", &built_in_type_of);
+    data_assign_to(type_of.ref, FUNCTION_DATA(type_of_func), &GLOBAL_FUNCTION_TYPE);
+
+    return (data_ref_access_result){TRUE, NULL, NULL};
 }
 
 void free_dict(dictionary* dict){

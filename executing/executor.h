@@ -19,5 +19,12 @@ typedef struct expr_eval_result_t{
     BOOL stop_execution;
 } expr_eval_result;
 
+typedef struct expr_list_eval_result_t{
+    BOOL succesful;
+    data_list* data;
+    BOOL stop_execution;
+} expr_list_eval_result;
+
 //execution_result run_statement(stmt* statement, dictionary* dict);
+void write_exec_error(char* message, size_t line);
 execution_result run_program(stmt* start_statement, dictionary* dict);

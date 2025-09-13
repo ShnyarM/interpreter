@@ -1,5 +1,5 @@
 {
-	"output": "hello world\nHello World!\nThis is a string.\nhello world\nhello world\nnew string\nhello world\nstring 3\n[[], [\"string 1\", \"string 2\", \"string 3\"]]\n4 Hello [1, 2, 3, 4, 5, 7][1, 2, 3, 4, 5, 7] another one\n1\n0\n0\n1\n0\n0\n0\n1",
+	"output": "hello world\nHello World!\nThis is a string.\nhello world\nhello world\nnew string\nhello world\nstring 3\n[[], [\"string 1\", \"string 2\", \"string 3\"]]\n4 Hello [1, 2, 3, 4, 5, 7][1, 2, 3, 4, 5, 7] another one\n1\n0\n0\n1\n0\n0\n0\n1\n8\n10\n9\n124.45\n1\n[\"[1, 2, 3, 4]\"]",
 	"return_code": "0",
 	"description": "Basic strings"
 }

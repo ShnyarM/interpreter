@@ -68,6 +68,12 @@ typedef struct data_update_result_t{
     enum data_update_failure_reason reason;
 } data_update_result;
 
+typedef struct data_list_t{
+    data data;
+    int size;
+    struct data_list_t* next;
+} data_list;
+
 void free_data(data data);
 void data_add_reference(data* d);
 void data_remove_reference(data* d);
@@ -83,6 +89,9 @@ struct string_t* data_get_string_from_data(data d);
 BOOL data_to_bool(data d);
 data data_default(data_type* type);
 BOOL data_equality(data d1, data d2);
+
+data_list* data_list_new_node(data d);
+void free_data_list(data_list* d);
 
 // Arrays
 

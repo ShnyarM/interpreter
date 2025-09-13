@@ -117,6 +117,23 @@ BOOL data_equality(data d1, data d2){
     return FALSE;
 }
 
+data_list* data_list_new_node(data d){
+    data_list* list = malloc(sizeof(data_list));
+    list->data = EMPTY_DATA;
+    data_assign_to(&list->data, d, &GLOBAL_ANY_TYPE);
+    list->size = 1;
+    list->next = NULL;
+    return list;
+}
+
+void free_data_list(data_list* d){
+    if(d == NULL) return;
+    free_data(d->data);
+    free_data_list(d->next);
+
+    free(d);
+}
+
 // Returns a new data array, which is not initialized yet, i.e., has no list attached to it
 // Type gets copied
 data_array* data_array_new(data_type* type){

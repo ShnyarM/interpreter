@@ -22,7 +22,7 @@ extern char PARSE_ERROR_MESSAGE[];
 // <expression> ::= <add-expr> (('==' | '<' | '<=') <add-expr>)*
 // <add-expr> ::= <mul-expr> (('+' | '-') <mul-expr>)*
 // <mul-expr> ::= <atomic> (('*' | '/') <atomic>)*
-// <atomic> ::= ['-' | '!'](<literal> | <variable_access> | <parens> | <function_call> | <array> | <string> | <bool>)
+// <atomic> ::= ['-' | '!'](<literal> | <variable_access> | <parens> | <function_call> | <array> | <string> | <bool> | <null>)
 // <parens> ::= '(' <expression> ')'
 
 // <function_call> ::== <variable_name>'('[<expression_listg>]')'
@@ -32,6 +32,7 @@ extern char PARSE_ERROR_MESSAGE[];
 
 // <string> ::== '"' (<character>)* '"'
 // <bool> ::== 'true' | 'false'
+// <null> ::== 'null'
 
 // <variable_name> ::== ('_' | <letter>)('_' | <letter> | <digit>)*
 // <variable_access> ::== <variable_name>( ('['<expression']') )*
@@ -45,14 +46,13 @@ extern char PARSE_ERROR_MESSAGE[];
 // <parameter_list> ::= <type> <variable_name> (',' <type> <variable_name>)*
 
 // <multiple_statements> ::= <statement> (<statement>)*
-// <statement> ::== <initialization> | <assignment> | <if> | <while> | <print> | <block> | 'break;' | 'stop;' | <expression>';'
+// <statement> ::== <initialization> | <assignment> | <if> | <while> | <block> | 'break;' | 'stop;' | <expression>';'
 
 // <initialization> ::== <type> <variable_name> ['=' <expression>]';'
 // <assignment> ::== <variable_access> '=' <expression>';'
 
 // <if> ::== 'if (' <expression> ')' <statement> ['else' <statement>]
 // <while> ::== 'while (' <expression> ')' <statement>
-// <print> ::== 'print(' <expression> ')'';'
 // <block> ::=  '{' <multiple_statements> '}'
 // <return> ::= 'return ' [<expression>]';' 
 
@@ -62,6 +62,7 @@ program parse_program(char* str){
     program prog;
     prog.first_statement = NULL;
     prog.functions = dict_new();
+    dict_add_built_in_functions(&prog.functions);
     prog.valid = TRUE;
 
     stmt* first_statement = NULL;
@@ -151,7 +152,7 @@ int execute_program(char* str, int argc, char** argv){
         free_data(arg);
     }
 
-    data_ref_access_result ref = dict_add(&GLOBAL_DICTIONARY, "_s_args", string_array_type);
+    data_ref_access_result ref = dict_add(&GLOBAL_DICTIONARY, "_sys_args", string_array_type);
     data_assign_to(ref.ref, array_data, ref.ref->type);
     free_data(array_data);
 
@@ -187,4 +188,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TO DO: built in functions
+//TO DO: for loops, greater than, dictionaries, maybe file system

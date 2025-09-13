@@ -18,8 +18,8 @@ typedef struct dictionary_t{
 
 dictionary dict_new();
 dictionary dict_get_extension(dictionary* child);
-//data_update_result dict_update(dictionary* dict, char* name, data data);
 data_ref_access_result dict_add(dictionary* dict, char* name, data_type* type);
 data_access_result dict_get(dictionary* dict, char* name);
 data_ref_access_result dict_get_reference(dictionary* dict, char* name);
+data_ref_access_result dict_add_built_in_functions(dictionary* dict);
 void free_dict(dictionary* dict); 

@@ -1,2 +1,14 @@
-bool boolean = false;
-boolean = true;
+any[] arr = [1, 2, 3, [1, 2, 3, 4], "hello", false, [[1], [2]]];
+print(typeOf(arr));
+
+any[] types;
+number i = 0;
+while(i < length(arr)){
+    types[i] = typeOf(arr[i]);
+    i=i+1;
+}
+print(types);
+any t;
+print(typeOf(t));
+
+print(typeOf(null));

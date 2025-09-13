@@ -42,7 +42,6 @@ extern char SEMICOLON_ERROR[];
 static parse_result_stmt parse_assignment(char* str);
 static parse_result_stmt parse_if(char* str);
 static parse_result_stmt parse_while(char* str);
-static parse_result_stmt parse_print(char* str);
 parse_result_stmt parse_statement(char* str);
 parse_result_stmt parse_multiple_statements(char* str);
 
@@ -223,26 +222,6 @@ static parse_result_stmt parse_while(char* str){
     return final;
 }
 
-static parse_result_stmt parse_print(char* str){
-    PARSE_INIT
-
-    char* print = word_follows(str, "print(", FALSE);
-    if(print == NULL) REVERT
-
-    parse_result_expr expression = parse_expr(print);
-    FATAL_CHECK(expression)
-    if(!expression.valid) REVERT
-
-    char* next = char_follows(expression.remaining, ')', FALSE);
-    FATAL_CHECK_NULL_WITH_FREE_EXPR(next, CLOSING_BRACKET_ERROR, expression.expression)
-
-    char* last = char_follows(next, ';', FALSE);
-    FATAL_CHECK_NULL_WITH_FREE_EXPR(last, SEMICOLON_ERROR, expression.expression)
-
-    stmt* statement = stmt_get_print(expression.expression, NULL);
-    return PARSE_RESULT_STMT(statement, last);
-}
-
 static parse_result_stmt parse_return(char* str){
     PARSE_INIT
 
@@ -308,7 +287,7 @@ parse_result_stmt parse_expression_statement(char* str){
 
     char* semi_colon = char_follows(expression.remaining, ';', FALSE);
     if(semi_colon == NULL){
-        free(expression.expression);
+        free_expr(expression.expression);
         FATAL_REVERT(SEMICOLON_ERROR);
     }
 
@@ -329,10 +308,6 @@ parse_result_stmt parse_statement(char* str){
     parse_result_stmt while_statement = parse_while(str);
     FATAL_CHECK(while_statement)
     if(while_statement.valid) return while_statement;
-
-    parse_result_stmt print = parse_print(str);
-    FATAL_CHECK(print)
-    if(print.valid) return print;
 
     parse_result_stmt ret = parse_return(str);
     FATAL_CHECK(ret)

@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -O3
 
-OBJS = _parser_helper.o types.o data.o expression.o statement.o dictionary.o function.o variable_access.o strings.o type_parser.o expr_parser.o stmt_parser.o function_parser.o executor.o main.o helper.o 
+OBJS = _parser_helper.o types.o data.o expression.o statement.o dictionary.o function.o variable_access.o strings.o type_parser.o expr_parser.o stmt_parser.o function_parser.o built_in_functions.o executor.o main.o helper.o 
 
 parse: $(OBJS)
 	$(CC) $(CFLAGS) -o parse $(OBJS)
@@ -29,13 +29,13 @@ statement.o: structs/statement.c structs/statement.h structs/types.h structs/var
 dictionary.o: structs/dictionary.c structs/dictionary.h structs/data.h helper.h
 	$(CC) $(CFLAGS) -c structs/dictionary.c
 
-function.o: structs/function.c structs/function.h structs/data.h structs/statement.h 
+function.o: structs/function.c structs/function.h structs/data.h structs/statement.h
 	$(CC) $(CFLAGS) -c structs/function.c
 
 variable_access.o: structs/variable_access.c structs/variable_access.h structs/expression.h helper.h
 	$(CC) $(CFLAGS) -c structs/variable_access.c
 
-strings.o: structs/strings.c structs/strings.h structs/data.h helper.h
+strings.o: structs/strings.c structs/strings.h structs/data.h structs/types.h helper.h
 	$(CC) $(CFLAGS) -c structs/strings.c
 
 
@@ -60,6 +60,9 @@ function_parser.o: parsing/function_parser.c parsing/function_parser.h parsing/s
 
 
 ## Executing
+
+built_in_functions.o: executing/built_in_functions.c structs/function.h structs/strings.h structs/data.h
+	$(CC) $(CFLAGS) -c executing/built_in_functions.c
 
 executor.o: executing/executor.c executing/executor.h structs/statement.h structs/dictionary.h structs/program.h structs/expression.h structs/data.h structs/function.h helper.h
 	$(CC) $(CFLAGS) -c executing/executor.c

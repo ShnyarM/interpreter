@@ -50,13 +50,6 @@ stmt* stmt_get_while(expr* condition, stmt* true_branch, stmt* next_statement){
     return statement;
 }
 
-stmt* stmt_get_print(expr* expression, stmt* next_statement){
-    stmt* statement = stmt_get_plain(Stmt_Print);
-    statement->expression = expression;
-    statement->next_statement = next_statement;
-    return statement;
-}
-
 stmt* stmt_get_block(stmt* inside, stmt* next_statement){
     stmt* statement = stmt_get_plain(Stmt_Block);
     statement->inner_stmt_1 = inside;

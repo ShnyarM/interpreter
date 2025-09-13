@@ -18,8 +18,8 @@ char OPENING_SQUARE_BRACKET_ERROR[] = "Expected opening square bracket '['.";
 char CLOSING_SQUARE_BRACKET_ERROR[] = "Expected closing square bracket ']'.";
 char SEMICOLON_ERROR[] = "Semicolon missing.";
 
-#define RESERVED_KEYWORDS_LENGTH 14
-char RESERVED_KEYWORDS[RESERVED_KEYWORDS_LENGTH][10] = {"if", "else", "while", "print", "break", "stop", "number", "function", "return", "string", "any", "bool", "true", "false"};
+#define RESERVED_KEYWORDS_LENGTH 13
+char RESERVED_KEYWORDS[RESERVED_KEYWORDS_LENGTH][10] = {"if", "else", "while", "break", "stop", "number", "function", "return", "string", "any", "bool", "true", "false"};
 
 //MAJOR POINT FOR POTENTIAL LINE ERROR
 token_result get_next_char(char* str){

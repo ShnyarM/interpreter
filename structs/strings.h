@@ -14,6 +14,7 @@ typedef struct string_t{
 
 string* string_new(char* content);
 string* string_from_data(struct data_t d, BOOL encapsuled);
+string* string_from_type(data_type* type);
 string* strings_concat(string* str1, string* str2);
 BOOL string_equality(string* s1, string* s2);
 BOOL string_is_empty(string* str);

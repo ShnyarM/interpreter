@@ -87,7 +87,7 @@ string* string_from_data(data d, BOOL encapsuled){
     if(data_is_of_kind_array(d)){ //If its array, print every value
         return string_from_data_array(data_get_array_from_data(d));
     }else if(data_is_empty(d)){
-        return string_new("VOID");
+        return string_new("NULL");
     }else if(data_is_string_type(d)){
         if(encapsuled) return string_get_encapsuled(data_get_string_from_data(d));
         else return string_new(data_get_string_from_data(d)->c_string);
@@ -96,6 +96,25 @@ string* string_from_data(data d, BOOL encapsuled){
     }else{
         return string_from_number(GET_NUMBER_FROM_DATA(d));
     }
+}
+
+string* string_from_type(data_type* type){
+    if(type==NULL) return &GLOBAL_EMPTY_STRING;
+    if(types_is_invalid(type)) return string_new("INVALID");
+    if(types_is_any(type)) return string_new("any");
+    if(types_is_bool(type)) return string_new("bool");
+    if(types_is_number(type)) return string_new("number");
+    if(types_is_string(type)) return string_new("string");
+    if(types_is_array(type)){
+        string* inner = string_from_type(type->inner_type);
+        string* brackets = string_new("[]");
+        string* result = strings_concat(inner, brackets);
+        free_string(inner);
+        free_string(brackets);
+        return result;
+    }
+
+    return &GLOBAL_EMPTY_STRING;
 }
 
 // Creates new string which is concatenation of both strings

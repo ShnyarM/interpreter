@@ -17,6 +17,7 @@ extern dictionary GLOBAL_DICTIONARY;
 extern program RUNNING_PROGRAM;
 
 expr_eval_result eval_expr(expr* expression, dictionary* dict);
+expr_list_eval_result eval_expr_list(expr* expr_list, dictionary* dict);
 
 void write_exec_error(char* message, size_t line){
     if(*message == 0) return;
@@ -93,7 +94,7 @@ static data_ref_access_result access_variable(var_access* variable, dictionary* 
 
 // calling dict is the dictionary under which the function is being called
 // used to evaluate arguments
-execution_result run_function(char* function_name, size_t line, expr* arguments, dictionary* calling_dict){
+execution_result run_function(char* function_name, size_t line, data_list* arguments){
     execution_result exec = (execution_result){TRUE, FALSE, FALSE, FALSE, EMPTY_DATA};
     execution_result function_exec  = (execution_result){TRUE, FALSE, FALSE, FALSE, EMPTY_DATA};
     dictionary function_dict = dict_get_extension(&GLOBAL_DICTIONARY);
@@ -105,9 +106,17 @@ execution_result run_function(char* function_name, size_t line, expr* arguments,
     }
     function* func = data_get_function_from_data(function_data.result);
 
-    // evaluate arguments and put them into dictionary
+    if(func->is_built_in){
+        built_in_exec_result res = func->built_in_func_ptr(arguments, line);
+        exec.data = res.data;
+        exec.succesful = res.successful;
+        free_dict(&function_dict);
+        return exec;
+    }
+
+    // put arguments into dictionary
     function_parameter* current_parameter = func->parameters;
-    expr* current_argument = arguments;
+    data_list* current_argument = arguments;
     while(TRUE){
         if(current_parameter == NULL && current_argument == NULL) break;
         if(current_parameter == NULL || current_argument == NULL){
@@ -115,35 +124,25 @@ execution_result run_function(char* function_name, size_t line, expr* arguments,
             goto UNSUCCESSFUL_FUNCTION_EXECUTION;    
         }
 
-        expr_eval_result argument_value = eval_expr(current_argument, calling_dict);
-        if(!argument_value.succesful || argument_value.stop_execution){
-            exec.succesful = argument_value.succesful;
-            exec.stop_execution = argument_value.stop_execution;
-            free_dict(&function_dict);
-            return exec;
-        }
+        data value = current_argument->data;
 
-        if(!types_can_be_assigned_to(current_parameter->type, argument_value.data.type)){
+        if(!types_can_be_assigned_to(current_parameter->type, value.type)){
             write_exec_error("Data type of argument does not match declared data type in function definition.", line);
-            free_data(argument_value.data);
             goto UNSUCCESSFUL_FUNCTION_EXECUTION;
         }
 
         data_ref_access_result ref = dict_add(&function_dict, current_parameter->name, current_parameter->type);
         if(!ref.valid){
             write_exec_error("Function can't be called, as it has two parameters with the same name.", line);
-            free_data(argument_value.data);
             goto UNSUCCESSFUL_FUNCTION_EXECUTION;
         }
 
-        data_update_result update = data_assign_to(ref.ref, argument_value.data, ref.storable);
+        data_update_result update = data_assign_to(ref.ref, value, ref.storable);
         if(!update.valid){
             write_exec_error("This shouldnt be able to happen, something wrong.", line);
-            free_data(argument_value.data);
             goto UNSUCCESSFUL_FUNCTION_EXECUTION;
         }
 
-        free_data(argument_value.data);
         current_parameter = current_parameter->next;
         current_argument = current_argument->next;
     }
@@ -181,11 +180,18 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
 
     // This is placed earlier, since expressions shouldnt get evaluated in this function
     if(expression->type == Expr_Function_Call){
-        execution_result function_exec = run_function(expression->variable->name, expression->line, expression->expr_1, dict);
-        
+        expr_list_eval_result data_list = eval_expr_list(expression->expr_1, dict);
+        if(!data_list.succesful || data_list.stop_execution){
+            res.succesful = data_list.succesful;
+            res.stop_execution = data_list.stop_execution;
+            return res;
+        }
+
+        execution_result function_exec = run_function(expression->variable->name, expression->line, data_list.data);
         res.stop_execution = function_exec.stop_execution;
         res.succesful = function_exec.succesful;
         res.data = function_exec.data;
+        free_data_list(data_list.data);
         return res;
     }
 
@@ -323,15 +329,8 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
     }
 
     if(expression->type == Expr_Bool_Neg){
-        if(data_is_bool_type(value1.data)){
-            res.data = BOOL_DATA(!GET_BOOL_FROM_DATA(value1.data));
-        }else if(data_is_number_type(value1.data)){
-            res.data = BOOL_DATA(!num1);
-        }
-        else{
-            write_exec_error("Invalid operand for '!' operator.", expression->line);
-            goto UNSUCCESSFUL_EVAL_EXPR;
-        }
+        BOOL to_bool = data_to_bool(value1.data);
+        res.data = BOOL_DATA(!to_bool);
     }
 
     if(expression->type == Expr_Eq){
@@ -367,6 +366,49 @@ UNSUCCESSFUL_EVAL_EXPR_FREE:
     free_data(value1.data);
     free_data(value2.data);
     return res;
+}
+
+expr_list_eval_result eval_expr_list(expr* expr_list, dictionary* dict){
+    expr_list_eval_result exec = (expr_list_eval_result){TRUE, NULL, FALSE};
+    expr* current = expr_list;
+    data_list* list_beginning = NULL;
+    data_list* list_end = NULL;
+    int size = 0;
+    
+    while(current != NULL){
+        expr_eval_result value = eval_expr(current, dict);
+        if(!value.succesful || value.stop_execution){
+            exec.succesful = value.succesful;
+            exec.stop_execution = value.stop_execution;
+            free_data_list(list_beginning);
+            return exec;
+        }
+
+        data_list* new_node = data_list_new_node(value.data);
+        if(list_beginning == NULL){
+            list_beginning = new_node;
+            list_end = new_node;
+        }else{
+            list_end->next = new_node;
+            list_end = new_node;
+        }
+
+        free_data(value.data);
+        current = current->next;
+        size++;
+    }
+
+    // assign size to each node
+    int current_size = size;
+    data_list* current_node = list_beginning;
+    while(current != NULL){
+        current_node->size = current_size;
+        current_size--;
+        current_node = current_node->next;
+    }
+
+    exec.data = list_beginning;
+    return exec;
 }
 
 execution_result run_single_statement(stmt* statement, dictionary* dict){
@@ -417,12 +459,6 @@ execution_result run_single_statement(stmt* statement, dictionary* dict){
                 goto UNSUCCESSFUL_STATEMENT_EXECUTION;
             }
         }
-    }
-
-    if(statement->type == Stmt_Print){
-        string* str = string_from_data(inner_expression.data, FALSE);
-        printf("%s\n", str->c_string);
-        free_string(str);
     }
 
     if(statement->type == Stmt_Return){

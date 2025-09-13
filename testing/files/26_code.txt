@@ -49,3 +49,13 @@ else print(0);
 
 if("hello")print(1);
 else print(0);
+
+print(length("hello")+3);
+print(length(hello));
+print(length("12345"+"67"+"89"));
+
+print(castToNumber("123.45")+1);
+print(castToNumber("as123")+1);
+
+string a = castToString([1, 2, 3, 4]);
+print([a]);

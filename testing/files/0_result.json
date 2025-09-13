@@ -1,5 +1,5 @@
 {
-    "output": "5\n44\nfalse\ntrue\nfalse\ntrue\ntrue\n160.2\n125\n12687.1256\n3",
+    "output": "5 2\n44\nfalse\ntrue\nfalse\ntrue\ntrue\n160.2\n125\n12687.1256\n3",
     "return_code": "0",
     "description": "Simple arithemtic expressions"
 }
