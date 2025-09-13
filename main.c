@@ -46,13 +46,14 @@ extern char PARSE_ERROR_MESSAGE[];
 // <parameter_list> ::= <type> <variable_name> (',' <type> <variable_name>)*
 
 // <multiple_statements> ::= <statement> (<statement>)*
-// <statement> ::== <initialization> | <assignment> | <if> | <while> | <block> | 'break;' | 'stop;' | <expression>';'
+// <statement> ::== <initialization> | <assignment> | <if> | <while> | <for> | <block> | 'break;' | 'stop;' | <expression>';'
 
 // <initialization> ::== <type> <variable_name> ['=' <expression>]';'
 // <assignment> ::== <variable_access> '=' <expression>';'
 
 // <if> ::== 'if (' <expression> ')' <statement> ['else' <statement>]
 // <while> ::== 'while (' <expression> ')' <statement>
+// <for> ::== 'for' '(' <statement> <expression>';' <statement> ')' <statement>
 // <block> ::=  '{' <multiple_statements> '}'
 // <return> ::= 'return ' [<expression>]';' 
 
@@ -188,4 +189,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TO DO: for loops, greater than, dictionaries, maybe file system
+//TO DO: for loops testing, greater than, dictionaries, maybe file system

@@ -81,3 +81,16 @@ built_in_exec_result built_in_type_of(data_list* args, size_t line){
 
     return EXEC_RESULT(STRING_DATA_PTR(str));
 }
+
+built_in_exec_result built_in_input(data_list* args, size_t line){
+    if(args != NULL){
+        write_exec_error("input() function does not take any arguments.", line);
+        return BAD_EXEC_RESULT;
+    }
+
+    char buffer[2048];
+    scanf("%2048s", buffer);
+    string* str = string_new(buffer);
+
+    return EXEC_RESULT(STRING_DATA_PTR(str));
+}

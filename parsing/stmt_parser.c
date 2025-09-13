@@ -41,6 +41,7 @@ extern char SEMICOLON_ERROR[];
 
 static parse_result_stmt parse_assignment(char* str);
 static parse_result_stmt parse_if(char* str);
+static parse_result_stmt parse_for(char* str);
 static parse_result_stmt parse_while(char* str);
 parse_result_stmt parse_statement(char* str);
 parse_result_stmt parse_multiple_statements(char* str);
@@ -160,6 +161,8 @@ static parse_result_stmt parse_if(char* str){
     char* if_str = word_follows(str, "if", FALSE);
     if(if_str == NULL) REVERT
 
+    if(is_digit(*if_str) || is_var_letter(*if_str)) REVERT
+
     char* open_bracket = char_follows(if_str, '(', FALSE);
     FATAL_CHECK_NULL(OPENING_BRACKET_ERROR, OPENING_BRACKET_ERROR)
 
@@ -193,11 +196,76 @@ static parse_result_stmt parse_if(char* str){
     return final;
 }
 
+static parse_result_stmt parse_for(char* str){
+    PARSE_INIT
+
+    char* for_str = word_follows(str, "for", FALSE);
+    if(for_str == NULL) REVERT
+
+    if(is_digit(*for_str) || is_var_letter(*for_str)) REVERT
+
+    char* open_bracket = char_follows(for_str, '(', FALSE);
+    FATAL_CHECK_NULL(open_bracket, OPENING_BRACKET_ERROR);
+
+    parse_result_stmt statement_1 = parse_statement(open_bracket);
+    FATAL_CHECK(statement_1);
+    if(!statement_1.valid) FATAL_REVERT("Invalid first statement in for statement.")
+
+    parse_result_expr expression = parse_expr(statement_1.remaining);
+    FATAL_CHECK(expression);
+    if(!expression.valid){
+        free_stmt(statement_1.statement);
+        FATAL_REVERT("Invalid expression in for statement.");
+    }
+
+    char* semi_colon = char_follows(expression.remaining, ';', FALSE);
+    if(semi_colon == NULL){
+        free_stmt(statement_1.statement);
+        free_expr(expression.expression);
+        FATAL_REVERT("Expected semi-colon after middle expression in for statement");
+    }
+
+    parse_result_stmt statement_2 = parse_statement(semi_colon);
+    FATAL_CHECK(statement_2);
+    if(!statement_2.valid){
+        free_stmt(statement_1.statement);
+        free_expr(expression.expression);
+        FATAL_REVERT("Invalid second statement in for statement.");
+    }
+
+    char* close_bracket = char_follows(statement_2.remaining, ')', FALSE);
+    if(close_bracket == NULL){
+        free_stmt(statement_1.statement);
+        free_expr(expression.expression);
+        free_stmt(statement_2.statement);
+        FATAL_REVERT(CLOSING_BRACKET_ERROR);
+    }
+
+    parse_result_stmt body = parse_statement(close_bracket);
+    FATAL_CHECK(body);
+    if(!body.valid){
+        free_stmt(statement_1.statement);
+        free_expr(expression.expression);
+        free_stmt(statement_2.statement);
+        FATAL_REVERT("Invalid second statement in for statement.");
+    }
+
+    // put together the for statement
+    body.statement->next_statement = statement_2.statement;
+    stmt* while_statement = stmt_get_while(expression.expression, body.statement, NULL);
+    statement_1.statement->next_statement = while_statement;
+    stmt* for_statement = stmt_get_block(statement_1.statement, NULL);
+
+    return PARSE_RESULT_STMT(for_statement, body.remaining);
+}
+
 static parse_result_stmt parse_while(char* str){
     PARSE_INIT
 
     char* while_str = word_follows(str, "while", FALSE);
     if(while_str == NULL) REVERT
+
+    if(is_digit(*while_str) || is_var_letter(*while_str)) REVERT
 
     char* open_bracket = char_follows(while_str, '(', FALSE);
     FATAL_CHECK_NULL(open_bracket, OPENING_BRACKET_ERROR)
@@ -304,6 +372,10 @@ parse_result_stmt parse_statement(char* str){
     parse_result_stmt if_statement = parse_if(str);
     FATAL_CHECK(if_statement)
     if(if_statement.valid) return if_statement;
+
+    parse_result_stmt for_statement = parse_for(str);
+    FATAL_CHECK(for_statement)
+    if(for_statement.valid) return for_statement;
 
     parse_result_stmt while_statement = parse_while(str);
     FATAL_CHECK(while_statement)

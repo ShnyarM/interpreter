@@ -15,6 +15,7 @@ built_in_exec_result built_in_length(data_list* args, size_t line);
 built_in_exec_result built_in_cast_to_number(data_list* args, size_t line);
 built_in_exec_result built_in_cast_to_string(data_list* args, size_t line);
 built_in_exec_result built_in_type_of(data_list* args, size_t line);
+built_in_exec_result built_in_input(data_list* args, size_t line);
 
 // general functions
 

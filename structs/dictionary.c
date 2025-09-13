@@ -164,6 +164,11 @@ data_ref_access_result dict_add_built_in_functions(dictionary* dict){
     function* type_of_func = function_get_built_in("typeOf", &built_in_type_of);
     data_assign_to(type_of.ref, FUNCTION_DATA(type_of_func), &GLOBAL_FUNCTION_TYPE);
 
+    data_ref_access_result input = dict_add(dict, "input", &GLOBAL_FUNCTION_TYPE);
+    if(!input.valid) return input;
+    function* input_func = function_get_built_in("input", &built_in_input);
+    data_assign_to(input.ref, FUNCTION_DATA(input_func), &GLOBAL_FUNCTION_TYPE);
+
     return (data_ref_access_result){TRUE, NULL, NULL};
 }
 
