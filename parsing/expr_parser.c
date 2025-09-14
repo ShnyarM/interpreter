@@ -59,27 +59,33 @@ parse_result_expr parse_expr(char *str)
         e_type operator;
         char *next = word_follows(remaining, "==", FALSE);
 
-        if (next == NULL)
-        {
+        if (next == NULL){
             next = word_follows(remaining, "<=", FALSE);
 
-            if (next == NULL)
-            {
+            if (next == NULL){
                 next = word_follows(remaining, "<", FALSE);
                 if (next == NULL){
-                    LINE_COUNTER = counter_before;
-                    break;
-                }
+                    next = word_follows(remaining, ">=", FALSE);
 
-                operator=Expr_Lt;
+                    if(next==NULL){
+                        next = word_follows(remaining, ">", FALSE);
+                        if(next == NULL){
+                            LINE_COUNTER = counter_before;
+                            break;
+                        }
+                        operator = Expr_Gt;
+                    }else{
+                        operator = Expr_Gte;
+                    }
+                }else{
+                    operator=Expr_Lt;
+                }
             }
-            else
-            {
+            else{
                 operator= Expr_Lte;
             }
         }
-        else
-        {
+        else{
             operator= Expr_Eq;
         }
 

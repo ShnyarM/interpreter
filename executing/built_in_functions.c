@@ -89,7 +89,8 @@ built_in_exec_result built_in_input(data_list* args, size_t line){
     }
 
     char buffer[2048];
-    scanf("%2048s", buffer);
+    int res = scanf("%2048s", buffer);
+    if(res == 0) return BAD_EXEC_RESULT;
     string* str = string_new(buffer);
 
     return EXEC_RESULT(STRING_DATA_PTR(str));

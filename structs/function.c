@@ -1,5 +1,14 @@
 #include "function.h"
 
+built_in_function_definition BUILT_IN_FUNCTIONS[BUILT_IN_FUNCTION_COUNT] = {
+    (built_in_function_definition){"print", &built_in_print},
+    (built_in_function_definition){"length", &built_in_length},
+    (built_in_function_definition){"castToNumber", &built_in_cast_to_number},
+    (built_in_function_definition){"castToString", &built_in_cast_to_string},
+    (built_in_function_definition){"typeOf", &built_in_type_of},
+    (built_in_function_definition){"input", &built_in_input}
+};
+
 // takes ownership of return_type
 function_parameter* function_parameter_get(char* name, data_type* return_type){
     function_parameter* arg = malloc(sizeof(function_parameter));

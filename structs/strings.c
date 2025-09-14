@@ -26,7 +26,7 @@ string* string_get_encapsuled(string* s){
     size_t buffer_size = s->length+3;
     str->c_string = (char*)malloc(buffer_size);
     str->c_string[0] = '"';
-    snprintf(str->c_string+1, str->length+1, "%s", s->c_string);
+    snprintf(str->c_string+1, str->length, "%s", s->c_string);
     str->c_string[buffer_size-2] = '"';
     str->c_string[buffer_size-1] = 0;
     

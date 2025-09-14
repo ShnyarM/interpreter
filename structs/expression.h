@@ -9,7 +9,7 @@ struct expression_t;
 struct data_t;
 
 // Expressions
-typedef enum expr_type_e {Expr_Lit, Expr_Add, Expr_Sub, Expr_Mul, Expr_Div, Expr_Neg, Expr_Var_Acc, Expr_Function_Call, Expr_Array, Expr_Bool_Neg, Expr_Eq, Expr_Lt, Expr_Lte} e_type;
+typedef enum expr_type_e {Expr_Lit, Expr_Add, Expr_Sub, Expr_Mul, Expr_Div, Expr_Neg, Expr_Var_Acc, Expr_Function_Call, Expr_Array, Expr_Bool_Neg, Expr_Eq, Expr_Lt, Expr_Lte, Expr_Gt, Expr_Gte} e_type;
 
 typedef struct expression_t{
     e_type type;

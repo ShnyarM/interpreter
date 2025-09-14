@@ -3,7 +3,7 @@
 #include "_parser_helper.h"
 #include "../helper.h"
 
-#define PARSE_ERROR_MESSAGE_LENGTH 100
+#define PARSE_ERROR_MESSAGE_LENGTH 300
 
 size_t LINE_COUNTER = 1;
 

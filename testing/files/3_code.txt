@@ -62,6 +62,15 @@ while(1){
     }
 }
 
+for(number i = 0; i < 10; i=i+1;){
+    print(i);
+}
+
+for(number i = 0; i < 10000; i=i+1;){
+    print(i);
+    if(i == 1) break;
+}
+
 print(2);
 break;
 print(1);

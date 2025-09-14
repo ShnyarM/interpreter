@@ -9,7 +9,7 @@
 #include "../structs/data.h"
 #include "../structs/function.h"
 
-#define EXEC_ERROR_MESSAGE_LENGTH 100
+#define EXEC_ERROR_MESSAGE_LENGTH 300
 
 char EXEC_ERROR_MESSAGE[EXEC_ERROR_MESSAGE_LENGTH];
 
@@ -256,9 +256,7 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
 
     if(expression->type == Expr_Lit){
         data_assign_to(&res.data, expression->data, &GLOBAL_ANY_TYPE);
-    }
-
-    if(expression->type == Expr_Add){
+    }else if(expression->type == Expr_Add){
         if(both_num){ // Both are numbers
             res.data = NUMBER_DATA(num1 + num2);
         }else if(data_is_string_type(value1.data) && data_is_string_type(value2.data)){ // Both are strings
@@ -278,27 +276,21 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
             write_exec_error("Invalid operands for '+' operator.", expression->line);
             goto UNSUCCESSFUL_EVAL_EXPR;
         }
-    }
-
-    if(expression->type == Expr_Sub){
+    }else if(expression->type == Expr_Sub){
         if(!both_num){
             write_exec_error("Invalid operands for '-' operator.", expression->line);
             goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
         res.data = NUMBER_DATA(num1 - num2);
-    }
-
-    if(expression->type == Expr_Mul){
+    }else if(expression->type == Expr_Mul){
         if(!both_num){
             write_exec_error("Invalid operands for '*' operator.", expression->line);
             goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
         res.data = NUMBER_DATA(num1 * num2);
-    }
-
-    if(expression->type == Expr_Div){
+    }else if(expression->type == Expr_Div){
         if(!both_num){
             write_exec_error("Invalid operands for '/' operator.", expression->line);
             goto UNSUCCESSFUL_EVAL_EXPR;
@@ -309,52 +301,55 @@ expr_eval_result eval_expr(expr* expression, dictionary* dict){
             goto UNSUCCESSFUL_EVAL_EXPR;
         }
         res.data = NUMBER_DATA(num1 / num2);
-    }
-
-    if(expression->type == Expr_Neg){
+    }else if(expression->type == Expr_Neg){
         if(!data_is_number_type(value1.data)){
             write_exec_error("Invalid operand for negation operator.", expression->line);
             goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
         res.data = NUMBER_DATA(-num1);
-    }
-
-    if(expression->type == Expr_Var_Acc){
+    }else if(expression->type == Expr_Var_Acc){
         data_ref_access_result var_value = access_variable(expression->variable, dict);
         if(var_value.valid) data_assign_to(&res.data, *var_value.ref, &GLOBAL_ANY_TYPE);
         else{
             goto UNSUCCESSFUL_EVAL_EXPR;
         }
-    }
-
-    if(expression->type == Expr_Bool_Neg){
+    }else if(expression->type == Expr_Bool_Neg){
         BOOL to_bool = data_to_bool(value1.data);
         res.data = BOOL_DATA(!to_bool);
-    }
-
-    if(expression->type == Expr_Eq){
+    }else if(expression->type == Expr_Eq){
         BOOL result = data_equality(value1.data, value2.data);
         res.data = BOOL_DATA(result);
-    }
-
-    if(expression->type == Expr_Lt){
+    }else if(expression->type == Expr_Lt){
         if(!both_num){
             write_exec_error("Invalid operand for '<' operator.", expression->line);
             goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
         res.data = BOOL_DATA(num1 < num2);
-    }
-
-    if(expression->type == Expr_Lte){
+    }else if(expression->type == Expr_Lte){
         if(!both_num){
             write_exec_error("Invalid operand for '<=' operator.", expression->line);
             goto UNSUCCESSFUL_EVAL_EXPR;
         }
 
         res.data = BOOL_DATA(num1 <= num2);
+    }else if(expression->type == Expr_Gt){
+        if(!both_num){
+            write_exec_error("Invalid operand for '>' operator.", expression->line);
+            goto UNSUCCESSFUL_EVAL_EXPR;
+        }
+
+        res.data = BOOL_DATA(num1 > num2);
+    }else if(expression->type == Expr_Gte){
+        if(!both_num){
+            write_exec_error("Invalid operand for '>=' operator.", expression->line);
+            goto UNSUCCESSFUL_EVAL_EXPR;
+        }
+
+        res.data = BOOL_DATA(num1 >= num2);
     }
+
 
     free_data(value1.data);
     free_data(value2.data);

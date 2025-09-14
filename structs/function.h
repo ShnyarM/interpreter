@@ -10,6 +10,15 @@ typedef struct built_in_exec_result_t{
 
 typedef built_in_exec_result (*built_in_function)(data_list*, size_t);
 
+
+typedef struct built_in_function_definition_t{
+    char* name;
+    built_in_function ptr;
+} built_in_function_definition;
+
+#define BUILT_IN_FUNCTION_COUNT 6
+extern built_in_function_definition BUILT_IN_FUNCTIONS[];
+
 built_in_exec_result built_in_print(data_list* args, size_t line);
 built_in_exec_result built_in_length(data_list* args, size_t line);
 built_in_exec_result built_in_cast_to_number(data_list* args, size_t line);

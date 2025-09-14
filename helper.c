@@ -58,7 +58,11 @@ char* file_to_string(char* filename){
         fseek (f, 0, SEEK_SET);
         buffer = malloc (length+1);
         if (buffer){
-          fread (buffer, 1, length, f);
+            int r = fread (buffer, 1, length, f);
+            if(r == 0){
+                free(buffer);
+                return NULL;
+            }
         }
         fclose (f);
     }else{

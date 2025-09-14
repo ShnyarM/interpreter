@@ -189,4 +189,4 @@ int main(int argc, char** argv){
     return result;
 }
 
-//TO DO: for loops testing, greater than, dictionaries, maybe file system
+//TO DO: dictionaries, maybe file system

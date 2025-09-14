@@ -139,35 +139,15 @@ static void dict_increase_capacity(dictionary* dict){
 }
 
 data_ref_access_result dict_add_built_in_functions(dictionary* dict){
-    data_ref_access_result print = dict_add(dict, "print", &GLOBAL_FUNCTION_TYPE);
-    if(!print.valid) return print;
-    function* print_func = function_get_built_in("print", &built_in_print);
-    data_assign_to(print.ref, FUNCTION_DATA(print_func), &GLOBAL_FUNCTION_TYPE);
+    for(int i = 0; i < BUILT_IN_FUNCTION_COUNT; i++){
+        char* name = BUILT_IN_FUNCTIONS[i].name;
+        built_in_function ptr = BUILT_IN_FUNCTIONS[i].ptr;
 
-    data_ref_access_result length = dict_add(dict, "length", &GLOBAL_FUNCTION_TYPE);
-    if(!length.valid) return length;
-    function* length_func = function_get_built_in("length", &built_in_length);
-    data_assign_to(length.ref, FUNCTION_DATA(length_func), &GLOBAL_FUNCTION_TYPE);
-
-    data_ref_access_result cast_to_number = dict_add(dict, "castToNumber", &GLOBAL_FUNCTION_TYPE);
-    if(!cast_to_number.valid) return cast_to_number;
-    function* cast_to_number_func = function_get_built_in("castToNumber", &built_in_cast_to_number);
-    data_assign_to(cast_to_number.ref, FUNCTION_DATA(cast_to_number_func), &GLOBAL_FUNCTION_TYPE);
-
-    data_ref_access_result cast_to_string = dict_add(dict, "castToString", &GLOBAL_FUNCTION_TYPE);
-    if(!cast_to_string.valid) return cast_to_string;
-    function* cast_to_string_func = function_get_built_in("castToString", &built_in_cast_to_string);
-    data_assign_to(cast_to_string.ref, FUNCTION_DATA(cast_to_string_func), &GLOBAL_FUNCTION_TYPE);
-
-    data_ref_access_result type_of = dict_add(dict, "typeOf", &GLOBAL_FUNCTION_TYPE);
-    if(!type_of.valid) return type_of;
-    function* type_of_func = function_get_built_in("typeOf", &built_in_type_of);
-    data_assign_to(type_of.ref, FUNCTION_DATA(type_of_func), &GLOBAL_FUNCTION_TYPE);
-
-    data_ref_access_result input = dict_add(dict, "input", &GLOBAL_FUNCTION_TYPE);
-    if(!input.valid) return input;
-    function* input_func = function_get_built_in("input", &built_in_input);
-    data_assign_to(input.ref, FUNCTION_DATA(input_func), &GLOBAL_FUNCTION_TYPE);
+        data_ref_access_result ref = dict_add(dict, name, &GLOBAL_FUNCTION_TYPE);
+        if(!ref.valid) return ref;
+        function* func = function_get_built_in(name, ptr);
+        data_assign_to(ref.ref, FUNCTION_DATA(func), &GLOBAL_FUNCTION_TYPE);
+    }
 
     return (data_ref_access_result){TRUE, NULL, NULL};
 }
