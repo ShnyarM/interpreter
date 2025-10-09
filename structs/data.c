@@ -101,7 +101,7 @@ data data_default(data_type* type){
         d.value = (data_value){.str=&GLOBAL_EMPTY_STRING};
     }else if(types_is_bool(type)){
         d.type = &GLOBAL_BOOL_TYPE;
-        d.value = (data_value){.bool=FALSE};
+        d.value = (data_value){.boolean=FALSE};
     }
     
     return d;

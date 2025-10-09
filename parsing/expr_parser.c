@@ -216,10 +216,10 @@ static parse_result_expr parse_atomic(char *str)
     if (number.valid)
         return number;
 
-    parse_result_expr bool = parse_bool(str);
-    FATAL_CHECK(bool)
-    if (bool.valid)
-        return bool;
+    parse_result_expr boolean = parse_bool(str);
+    FATAL_CHECK(boolean)
+    if (boolean.valid)
+        return boolean;
 
     parse_result_expr null = parse_null(str);
     FATAL_CHECK(null)

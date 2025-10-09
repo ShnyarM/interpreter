@@ -22,11 +22,11 @@
 #define FUNCTION_DATA(ptr) ((data){&GLOBAL_FUNCTION_TYPE, (data_value){.function=ptr}})
 #define STRING_DATA(s) ((data){&GLOBAL_STRING_TYPE, (data_value){.str=string_new(s)}})
 #define STRING_DATA_PTR(ptr) ((data){&GLOBAL_STRING_TYPE, (data_value){.str=ptr}})
-#define BOOL_DATA(b) ((data){&GLOBAL_BOOL_TYPE, (data_value){.bool=(BOOL)b}})
+#define BOOL_DATA(b) ((data){&GLOBAL_BOOL_TYPE, (data_value){.boolean=(BOOL)b}})
 
 // Data extraction
 #define GET_NUMBER_FROM_DATA(d) (d.value.number)
-#define GET_BOOL_FROM_DATA(d) (d.value.bool)
+#define GET_BOOL_FROM_DATA(d) (d.value.boolean)
 
 // Data access results
 #define INVALID_DATA_ACCESS_RESULT ((data_access_result){FALSE, EMPTY_DATA})
@@ -41,8 +41,8 @@ typedef union data_value_u {
     struct data_array_t* arr;
     struct function_t* function;
     struct string_t* str;
-    double number;
-    BOOL bool;
+    double number; 
+    BOOL boolean;
 } data_value;
 
 typedef struct data_t {
