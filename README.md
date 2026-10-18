@@ -16,11 +16,11 @@ Complete with automatic memory allocation for dynamic structures, and a garbage 
 
 ## Programs
 
-At the moment, two example programs can be found in the [input/](input/) directors:
+At the moment, two example programs can be found in the [input/](input/) directory:
 
-1. Game of life: An implementation of Conway's game of life. The number of generations it should run for is given as a command-line argument.
+1. **Game of life**: An implementation of Conway's game of life. The number of generations it should run for is given as a command-line argument.
 
-2. A JSON-like pretty printer. The object to be pretty-printed is specified in the program
+2. **JSON-like pretty printer**. The object to be pretty-printed is specified in the program.
 
 ## Running the interpreter
 
@@ -34,7 +34,7 @@ Test cases can be found under the [testing/](testing/) directory. These can be e
 
 ```python3 testing/test.py```
 
-This will go through all test cases and make sure, that the output matches the output specified in the corresponding `.json` file.
+This will go through all test cases and make sure that the output matches the output specified in the corresponding `.json` file.
 
 Additonally, running:
 
@@ -42,4 +42,4 @@ Additonally, running:
 
 will check all test cases for memory leaks using `valgrind`.
 
-Note that, due to the nature of reference counting, the interpreter *can contain memory leaks when defining cyclic structures*.
+Note that, due to the nature of reference counting, the interpreter **can contain memory leaks when defining cyclic structures**.
