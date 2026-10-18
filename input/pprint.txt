@@ -1,0 +1,105 @@
+string QUOTE = "'";
+
+function indent(number depth):string{
+    string s = "";
+    number i = 0;
+    while(i < depth){
+        s = s + "  ";
+        i = i+1;
+    }
+    return s;
+}
+
+function formatScalar(any x):string{
+    if(typeOf(x) == "string") return QUOTE + x + QUOTE;
+    if(typeOf(x) == "null") return "null";
+    return castToString(x);
+}
+
+function isScalar(any x):number{
+    if(typeOf(x) == "number") return 1;
+    if(typeOf(x) == "string") return 1;
+    if(typeOf(x) == "bool") return 1;
+    if(typeOf(x) == "null") return 1;
+    if(typeOf(x) == "INVALID") return 1;
+    return 0;
+}
+
+function printValue(any x, number depth, string comma){
+    if(isScalar(x)){
+        print(indent(depth) + formatScalar(x) + comma);
+        return 0;
+    }
+    if(length(x) == 0){
+        print(indent(depth) + "[]" + comma);
+        return 0;
+    }
+    print(indent(depth) + "[");
+    number i = 0;
+    string next = ",";
+    while(i < length(x)){
+        next = ",";
+        if(i + 1 < length(x)) next = ","; else next = "";
+        printValue(x[i], depth+1, next);
+        i = i+1;
+    }
+    print(indent(depth) + "]" + comma);
+    return 0;
+}
+
+function compact(any x):string{
+    if(isScalar(x)) return formatScalar(x);
+    string out = "[";
+    number i = 0;
+    while(i < length(x)){
+        out = out + compact(x[i]);
+        if(i + 1 < length(x)) out = out + ", ";
+        i = i+1;
+    }
+    return out + "]";
+}
+
+function maxDepth(any x):number{
+    if(isScalar(x)) return 0;
+    number best = 0;
+    number i = 0;
+    while(i < length(x)){
+        number d = maxDepth(x[i]);
+        if(best < d) best = d;
+        i = i+1;
+    }
+    return best + 1;
+}
+
+function countLeaves(any x):number{
+    if(isScalar(x)) return 1;
+    number total = 0;
+    number i = 0;
+    while(i < length(x)){
+        total = total + countLeaves(x[i]);
+        i = i+1;
+    }
+    return total;
+}
+
+any[] data = [
+    1,
+    "hello",
+    false,
+    null,
+    [1, 2, [3, 4]],
+    [],
+    ["a", ["b", ["c", [true]]]],
+    [[1], [2, "two"]]
+];
+
+print("=== compact ===");
+print(compact(data));
+
+print("");
+print("=== pretty ===");
+printValue(data, 0, "");
+
+print("");
+print("max depth: " + maxDepth(data));
+print("leaf values: " + countLeaves(data));
