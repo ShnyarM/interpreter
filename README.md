@@ -22,6 +22,8 @@ At the moment, two example programs can be found in the [input/](input/) directo
 
 2. **JSON-like pretty printer**. The object to be pretty-printed is specified in the program.
 
+Additional examples can be found in the [testing/](testing/) directory.
+
 ## Running the interpreter
 
 The interpreter can be compiled using `make`. This will create an executable called `interpreter`, which can be executed in the following way:
