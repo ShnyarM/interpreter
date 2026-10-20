@@ -4,7 +4,7 @@ An interpreter for a self-made programming language written in C. Currently has 
 
 - Variables
 - Functions
-- Type checking
+- Dynamic type checking
 - Arrays
 - Strings
 - Numbers (floating-point doubles)
